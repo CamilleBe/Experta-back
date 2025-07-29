@@ -17,4 +17,14 @@ router.put('/:id', userController.updateUser);
 // Route pour supprimer un utilisateur
 router.delete('/:id', userController.deleteUser);
 
+// Routes spécialisées pour les professionnels
+router.get('/professionals/tag/:tag', userController.getProfessionalsByTag);
+router.get('/professionals/zone/:zone', userController.getProfessionalsByZone);
+router.get('/professionals/top', userController.getTopProfessionals);
+router.get('/professionals/stats/popular-tags', userController.getPopularTagsMetiers);
+
+// Routes pour la gestion des tags métiers
+router.post('/:id/tags-metiers', userController.addTagMetierToUser);
+router.delete('/:id/tags-metiers', userController.removeTagMetierFromUser);
+
 module.exports = router; 

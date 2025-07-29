@@ -84,7 +84,10 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role, telephone } = req.body;
+    const { 
+      firstName, lastName, email, password, role, telephone,
+      zoneIntervention, tagsMetiers, nomEntreprise 
+    } = req.body;
     console.log(`👤 Création d'un nouvel utilisateur: ${email}`);
     
     // Validation des champs requis
@@ -104,15 +107,26 @@ const createUser = async (req, res) => {
       });
     }
     
-    // Créer le nouvel utilisateur
-    const newUser = await User.create({
+    // Préparer les données pour les professionnels
+    const userData = {
       firstName,
       lastName,
       email,
       password, // Sera hashé automatiquement par le hook
       role: role || 'client',
       telephone
-    });
+    };
+    
+    // Ajouter les champs professionnels si le rôle l'exige
+    const isProfessional = ['AMO', 'partenaire'].includes(role);
+    if (isProfessional) {
+      if (zoneIntervention) userData.zoneIntervention = zoneIntervention;
+      if (tagsMetiers) userData.tagsMetiers = tagsMetiers;
+      if (nomEntreprise) userData.nomEntreprise = nomEntreprise;
+    }
+    
+    // Créer le nouvel utilisateur
+    const newUser = await User.create(userData);
     
     res.status(201).json({
       success: true,
@@ -143,7 +157,10 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, role, isActive, telephone } = req.body;
+    const { 
+      firstName, lastName, email, role, isActive, telephone,
+      zoneIntervention, tagsMetiers, nomEntreprise, noteFiabilite 
+    } = req.body;
     console.log(`✏️ Mise à jour de l'utilisateur ID: ${id}`);
     
     // Validation de l'ID
@@ -174,7 +191,7 @@ const updateUser = async (req, res) => {
       }
     }
     
-    // Mettre à jour les champs
+    // Mettre à jour les champs de base
     const updateData = {};
     if (firstName) updateData.firstName = firstName;
     if (lastName) updateData.lastName = lastName;
@@ -182,6 +199,36 @@ const updateUser = async (req, res) => {
     if (role) updateData.role = role;
     if (typeof isActive === 'boolean') updateData.isActive = isActive;
     if (telephone !== undefined) updateData.telephone = telephone;
+    
+    // Mettre à jour les champs professionnels si l'utilisateur est/devient un professionnel
+    const currentUser = user;
+    const newRole = role || currentUser.role;
+    const isProfessional = ['AMO', 'partenaire'].includes(newRole);
+    
+    if (isProfessional) {
+      if (zoneIntervention !== undefined) updateData.zoneIntervention = zoneIntervention;
+      if (tagsMetiers !== undefined) updateData.tagsMetiers = tagsMetiers;
+      if (nomEntreprise !== undefined) updateData.nomEntreprise = nomEntreprise;
+      if (noteFiabilite !== undefined) {
+        // Validation spéciale pour la note de fiabilité
+        if (noteFiabilite >= 0 && noteFiabilite <= 5) {
+          updateData.noteFiabilite = parseFloat(noteFiabilite.toFixed(2));
+        } else {
+          return res.status(400).json({
+            success: false,
+            message: 'La note de fiabilité doit être entre 0 et 5'
+          });
+        }
+      }
+    } else {
+      // Si l'utilisateur n'est plus professionnel, vider les champs professionnels
+      if (role && !isProfessional) {
+        updateData.zoneIntervention = null;
+        updateData.tagsMetiers = null;
+        updateData.nomEntreprise = null;
+        updateData.noteFiabilite = null;
+      }
+    }
     
     await user.update(updateData);
     
@@ -261,10 +308,226 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getProfessionalsByTag = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    console.log(`🔍 Recherche des professionnels avec le tag: ${tag}`);
+    
+    const professionals = await User.findByTagMetier(tag, {
+      attributes: { exclude: ['password'] }
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: professionals,
+      message: `${professionals.length} professionnel(s) trouvé(s) avec le tag ${tag}`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getProfessionalsByTag:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la recherche des professionnels',
+      error: error.message
+    });
+  }
+};
+
+const getProfessionalsByZone = async (req, res) => {
+  try {
+    const { zone } = req.params;
+    console.log(`🌍 Recherche des professionnels dans la zone: ${zone}`);
+    
+    const professionals = await User.findByZoneIntervention(zone, {
+      attributes: { exclude: ['password'] }
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: professionals,
+      message: `${professionals.length} professionnel(s) trouvé(s) dans la zone ${zone}`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getProfessionalsByZone:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la recherche des professionnels',
+      error: error.message
+    });
+  }
+};
+
+const getTopProfessionals = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const role = req.query.role; // 'AMO' ou 'partenaire'
+    console.log(`⭐ Récupération des ${limit} meilleurs professionnels`);
+    
+    const professionals = await User.findTopProfessionals(limit, role);
+    
+    res.status(200).json({
+      success: true,
+      data: professionals,
+      message: `Top ${professionals.length} des professionnels les mieux notés`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getTopProfessionals:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des professionnels',
+      error: error.message
+    });
+  }
+};
+
+const getPopularTagsMetiers = async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    console.log(`📊 Récupération des ${limit} tags métiers les plus populaires`);
+    
+    const popularTags = await User.getPopularTagsMetiers(limit);
+    
+    res.status(200).json({
+      success: true,
+      data: popularTags,
+      message: `Top ${popularTags.length} des tags métiers populaires`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getPopularTagsMetiers:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des tags populaires',
+      error: error.message
+    });
+  }
+};
+
+const addTagMetierToUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tag } = req.body;
+    console.log(`➕ Ajout du tag métier "${tag}" à l'utilisateur ID: ${id}`);
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID utilisateur invalide'
+      });
+    }
+    
+    if (!tag) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le tag métier est requis'
+      });
+    }
+    
+    const user = await User.findByPk(id);
+    if (!user || !user.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
+    if (!user.isProfessional()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Seuls les professionnels peuvent avoir des tags métiers'
+      });
+    }
+    
+    const added = user.addTagMetier(tag);
+    if (added) {
+      await user.save();
+      res.status(200).json({
+        success: true,
+        data: user,
+        message: `Tag métier "${tag}" ajouté avec succès`
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Tag métier déjà existant ou invalide'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur addTagMetierToUser:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'ajout du tag métier',
+      error: error.message
+    });
+  }
+};
+
+const removeTagMetierFromUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { tag } = req.body;
+    console.log(`➖ Suppression du tag métier "${tag}" de l'utilisateur ID: ${id}`);
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID utilisateur invalide'
+      });
+    }
+    
+    if (!tag) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le tag métier est requis'
+      });
+    }
+    
+    const user = await User.findByPk(id);
+    if (!user || !user.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
+    const removed = user.removeTagMetier(tag);
+    if (removed) {
+      await user.save();
+      res.status(200).json({
+        success: true,
+        data: user,
+        message: `Tag métier "${tag}" supprimé avec succès`
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        message: 'Tag métier non trouvé'
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ Erreur removeTagMetierFromUser:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la suppression du tag métier',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
-  deleteUser
+  deleteUser,
+  getProfessionalsByTag,
+  getProfessionalsByZone,
+  getTopProfessionals,
+  getPopularTagsMetiers,
+  addTagMetierToUser,
+  removeTagMetierFromUser
 }; 

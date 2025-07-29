@@ -86,6 +86,73 @@ const User = sequelize.define('User', {
     comment: 'Numéro de téléphone de l\'utilisateur'
   },
   
+  zoneIntervention: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    field: 'zone_intervention',
+    defaultValue: null,
+    validate: {
+      isValidZoneArray(value) {
+        if (value && !Array.isArray(value)) {
+          throw new Error('zone_intervention doit être un tableau');
+        }
+        if (value && value.some(zone => typeof zone !== 'string')) {
+          throw new Error('Toutes les zones doivent être des chaînes de caractères');
+        }
+      }
+    },
+    comment: 'Zones d\'intervention du professionnel (départements, villes, etc.)'
+  },
+  
+  tagsMetiers: {
+    type: DataTypes.JSON,
+    allowNull: true,
+    field: 'tags_metiers',
+    defaultValue: null,
+    validate: {
+      isValidTagsArray(value) {
+        if (value && !Array.isArray(value)) {
+          throw new Error('tags_metiers doit être un tableau');
+        }
+        if (value && value.some(tag => typeof tag !== 'string')) {
+          throw new Error('Tous les tags métiers doivent être des chaînes de caractères');
+        }
+      }
+    },
+    comment: 'Métiers et spécialités du professionnel'
+  },
+  
+  nomEntreprise: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'nom_entreprise',
+    validate: {
+      len: {
+        args: [2, 255],
+        msg: 'Le nom de l\'entreprise doit contenir entre 2 et 255 caractères'
+      }
+    },
+    comment: 'Nom de l\'entreprise du professionnel'
+  },
+  
+  noteFiabilite: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    field: 'note_fiabilite',
+    defaultValue: null,
+    validate: {
+      min: {
+        args: [0],
+        msg: 'La note de fiabilité ne peut pas être négative'
+      },
+      max: {
+        args: [5],
+        msg: 'La note de fiabilité ne peut pas dépasser 5'
+      }
+    },
+    comment: 'Note de fiabilité du professionnel (0 à 5)'
+  },
+  
   password: {
     type: DataTypes.STRING(255),
     allowNull: false,
@@ -149,6 +216,23 @@ const User = sequelize.define('User', {
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
       }
+      
+      // Normaliser les données professionnelles
+      if (user.isProfessional()) {
+        // Normaliser les tags métiers
+        if (user.tagsMetiers && Array.isArray(user.tagsMetiers)) {
+          user.tagsMetiers = user.tagsMetiers
+            .map(tag => tag.toString().toLowerCase().trim())
+            .filter(tag => tag.length > 0);
+        }
+        
+        // Normaliser les zones d'intervention
+        if (user.zoneIntervention && Array.isArray(user.zoneIntervention)) {
+          user.zoneIntervention = user.zoneIntervention
+            .map(zone => zone.toString().trim())
+            .filter(zone => zone.length > 0);
+        }
+      }
     },
     
     // Avant mise à jour d'un utilisateur
@@ -158,6 +242,23 @@ const User = sequelize.define('User', {
         console.log(`🔐 Nouveau mot de passe pour ${user.email}...`);
         const salt = await bcrypt.genSalt(10);
         user.password = await bcrypt.hash(user.password, salt);
+      }
+      
+      // Normaliser les données professionnelles si changées
+      if (user.isProfessional()) {
+        // Normaliser les tags métiers si changés
+        if (user.changed('tagsMetiers') && user.tagsMetiers && Array.isArray(user.tagsMetiers)) {
+          user.tagsMetiers = user.tagsMetiers
+            .map(tag => tag.toString().toLowerCase().trim())
+            .filter(tag => tag.length > 0);
+        }
+        
+        // Normaliser les zones d'intervention si changées
+        if (user.changed('zoneIntervention') && user.zoneIntervention && Array.isArray(user.zoneIntervention)) {
+          user.zoneIntervention = user.zoneIntervention
+            .map(zone => zone.toString().trim())
+            .filter(zone => zone.length > 0);
+        }
       }
     },
     
@@ -184,6 +285,18 @@ const User = sequelize.define('User', {
     },
     {
       fields: ['created_at']
+    },
+    {
+      fields: ['nom_entreprise']
+    },
+    {
+      fields: ['note_fiabilite']
+    },
+    {
+      fields: ['role', 'note_fiabilite']
+    },
+    {
+      fields: ['role', 'is_active']
     }
   ]
 });
@@ -219,6 +332,92 @@ User.prototype.isAdmin = function() {
   return this.role === 'admin';
 };
 
+// Vérifier si l'utilisateur est un professionnel
+User.prototype.isProfessional = function() {
+  return ['AMO', 'partenaire'].includes(this.role);
+};
+
+// Ajouter une zone d'intervention
+User.prototype.addZoneIntervention = function(zone) {
+  if (!this.isProfessional()) return false;
+  
+  if (!this.zoneIntervention) {
+    this.zoneIntervention = [];
+  }
+  
+  const normalizedZone = zone.toString().trim();
+  if (normalizedZone && !this.zoneIntervention.includes(normalizedZone)) {
+    this.zoneIntervention.push(normalizedZone);
+    return true;
+  }
+  return false;
+};
+
+// Supprimer une zone d'intervention
+User.prototype.removeZoneIntervention = function(zone) {
+  if (!this.isProfessional() || !this.zoneIntervention) return false;
+  
+  const normalizedZone = zone.toString().trim();
+  const initialLength = this.zoneIntervention.length;
+  this.zoneIntervention = this.zoneIntervention.filter(z => z !== normalizedZone);
+  
+  return this.zoneIntervention.length < initialLength;
+};
+
+// Ajouter un tag métier
+User.prototype.addTagMetier = function(tag) {
+  if (!this.isProfessional()) return false;
+  
+  if (!this.tagsMetiers) {
+    this.tagsMetiers = [];
+  }
+  
+  const normalizedTag = tag.toString().toLowerCase().trim();
+  if (normalizedTag && !this.tagsMetiers.includes(normalizedTag)) {
+    this.tagsMetiers.push(normalizedTag);
+    return true;
+  }
+  return false;
+};
+
+// Supprimer un tag métier
+User.prototype.removeTagMetier = function(tag) {
+  if (!this.isProfessional() || !this.tagsMetiers) return false;
+  
+  const normalizedTag = tag.toString().toLowerCase().trim();
+  const initialLength = this.tagsMetiers.length;
+  this.tagsMetiers = this.tagsMetiers.filter(t => t !== normalizedTag);
+  
+  return this.tagsMetiers.length < initialLength;
+};
+
+// Vérifier si un tag métier existe
+User.prototype.hasTagMetier = function(tag) {
+  if (!this.isProfessional() || !this.tagsMetiers) return false;
+  
+  const normalizedTag = tag.toString().toLowerCase().trim();
+  return this.tagsMetiers.includes(normalizedTag);
+};
+
+// Vérifier si intervient dans une zone
+User.prototype.interventInZone = function(zone) {
+  if (!this.isProfessional() || !this.zoneIntervention) return false;
+  
+  const normalizedZone = zone.toString().trim();
+  return this.zoneIntervention.includes(normalizedZone);
+};
+
+// Mettre à jour la note de fiabilité
+User.prototype.updateNoteFiabilite = function(newNote) {
+  if (!this.isProfessional()) return false;
+  
+  if (newNote >= 0 && newNote <= 5) {
+    this.noteFiabilite = parseFloat(newNote.toFixed(2));
+    return true;
+  }
+  return false;
+};
+
 // ================================================
 // MÉTHODES STATIQUES (sur le modèle User)
 // ================================================
@@ -249,6 +448,92 @@ User.countByRole = async function() {
   });
 };
 
+// Trouver les professionnels par tag métier
+User.findByTagMetier = async function(tag, options = {}) {
+  const normalizedTag = tag.toString().toLowerCase().trim();
+  
+  return await this.findAll({
+    where: {
+      [sequelize.Op.and]: [
+        { role: { [sequelize.Op.in]: ['AMO', 'partenaire'] } },
+        { isActive: true },
+        sequelize.where(
+          sequelize.fn('JSON_SEARCH', sequelize.col('tags_metiers'), 'one', normalizedTag),
+          { [sequelize.Op.ne]: null }
+        ),
+        ...(options.where ? [options.where] : [])
+      ]
+    },
+    order: options.order || [['noteFiabilite', 'DESC'], ['createdAt', 'DESC']],
+    ...options
+  });
+};
+
+// Trouver les professionnels par zone d'intervention
+User.findByZoneIntervention = async function(zone, options = {}) {
+  const normalizedZone = zone.toString().trim();
+  
+  return await this.findAll({
+    where: {
+      [sequelize.Op.and]: [
+        { role: { [sequelize.Op.in]: ['AMO', 'partenaire'] } },
+        { isActive: true },
+        sequelize.where(
+          sequelize.fn('JSON_SEARCH', sequelize.col('zone_intervention'), 'one', normalizedZone),
+          { [sequelize.Op.ne]: null }
+        ),
+        ...(options.where ? [options.where] : [])
+      ]
+    },
+    order: options.order || [['noteFiabilite', 'DESC'], ['createdAt', 'DESC']],
+    ...options
+  });
+};
+
+// Trouver les professionnels les mieux notés
+User.findTopProfessionals = async function(limit = 10, role = null) {
+  const whereCondition = {
+    role: role ? role : { [sequelize.Op.in]: ['AMO', 'partenaire'] },
+    isActive: true,
+    noteFiabilite: { [sequelize.Op.ne]: null }
+  };
+  
+  return await this.findAll({
+    where: whereCondition,
+    order: [['noteFiabilite', 'DESC'], ['createdAt', 'DESC']],
+    limit: limit,
+    attributes: { exclude: ['password'] }
+  });
+};
+
+// Statistiques des tags métiers les plus populaires chez les pros
+User.getPopularTagsMetiers = async function(limit = 10) {
+  const professionals = await this.findAll({
+    where: { 
+      role: { [sequelize.Op.in]: ['AMO', 'partenaire'] },
+      isActive: true,
+      tagsMetiers: { [sequelize.Op.ne]: null }
+    },
+    attributes: ['tagsMetiers']
+  });
+  
+  // Compter les occurrences de chaque tag
+  const tagCounts = {};
+  professionals.forEach(pro => {
+    if (pro.tagsMetiers && Array.isArray(pro.tagsMetiers)) {
+      pro.tagsMetiers.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+      });
+    }
+  });
+  
+  // Trier par popularité
+  return Object.entries(tagCounts)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, limit)
+    .map(([tag, count]) => ({ tag, count }));
+};
+
 // ================================================
 // PERSONNALISER LA SÉRIALISATION JSON
 // ================================================
@@ -261,6 +546,16 @@ User.prototype.toJSON = function() {
   
   // Ajouter le nom complet
   values.fullName = this.getFullName();
+  
+  // Ajouter des informations calculées pour les professionnels
+  if (this.isProfessional()) {
+    values.isProfessional = true;
+    values.tagsCount = this.tagsMetiers ? this.tagsMetiers.length : 0;
+    values.zonesCount = this.zoneIntervention ? this.zoneIntervention.length : 0;
+    values.hasNote = this.noteFiabilite !== null;
+  } else {
+    values.isProfessional = false;
+  }
   
   return values;
 };

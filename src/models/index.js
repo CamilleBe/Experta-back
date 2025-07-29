@@ -139,6 +139,44 @@ const createDefaultData = async () => {
       console.log('👤 Utilisateur test créé: test@experta.com / Test123!');
     }
     
+    // Créer un AMO d'exemple
+    const existingAMO = await User.findOne({ where: { email: 'amo@experta.com' } });
+    if (!existingAMO) {
+      await User.create({
+        firstName: 'Marie',
+        lastName: 'Architecture',
+        email: 'amo@experta.com',
+        password: 'AMO123!',
+        role: 'AMO',
+        telephone: '+33 1 98 76 54 32',
+        zoneIntervention: ['75', '92', '93', '94'],
+        tagsMetiers: ['architecture', 'maîtrise d\'oeuvre', 'rénovation'],
+        nomEntreprise: 'Architecture & Conseil SARL',
+        noteFiabilite: 4.5
+      });
+      
+      console.log('🏗️ AMO d\'exemple créé: amo@experta.com / AMO123!');
+    }
+    
+    // Créer un partenaire d'exemple
+    const existingPartner = await User.findOne({ where: { email: 'partenaire@experta.com' } });
+    if (!existingPartner) {
+      await User.create({
+        firstName: 'Jean',
+        lastName: 'Renovation',
+        email: 'partenaire@experta.com',
+        password: 'Partner123!',
+        role: 'partenaire',
+        telephone: '+33 6 87 65 43 21',
+        zoneIntervention: ['75', '77', '78'],
+        tagsMetiers: ['plomberie', 'électricité', 'chauffage'],
+        nomEntreprise: 'Rénovation Pro SAS',
+        noteFiabilite: 4.2
+      });
+      
+      console.log('🔧 Partenaire d\'exemple créé: partenaire@experta.com / Partner123!');
+    }
+    
     console.log('✅ Données par défaut créées');
     
   } catch (error) {
