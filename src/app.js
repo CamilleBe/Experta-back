@@ -59,7 +59,15 @@ app.get('/health', (req, res) => {
 
 // Import des routes
 const userRoutes = require('./routes/userRoutes');
+const documentRoutes = require('./routes/documentRoutes');
+const projetRoutes = require('./routes/projetRoutes');
+const missionRoutes = require('./routes/missionRoutes');
+
+// Configuration des routes
 app.use('/api/users', userRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/projets', projetRoutes);
+app.use('/api/missions', missionRoutes);
 
 // Middleware de gestion d'erreur global
 app.use((err, req, res, next) => {

@@ -8,6 +8,7 @@ const { sequelize, testConnection, syncDatabase } = require('../config/database'
 const User = require('./User');
 const Document = require('./Document');
 const Projet = require('./Projet');
+const Mission = require('./Mission');
 
 // ================================================
 // ASSOCIATIONS ENTRE MODÈLES
@@ -47,6 +48,18 @@ User.hasMany(Projet, {
 Projet.belongsTo(User, { 
   foreignKey: 'amoId', 
   as: 'amo'
+});
+
+// Associations Projet <-> Mission
+Projet.hasMany(Mission, { 
+  foreignKey: 'projectId', 
+  as: 'missions',
+  onDelete: 'CASCADE'
+});
+
+Mission.belongsTo(Projet, { 
+  foreignKey: 'projectId', 
+  as: 'projet'
 });
 
 console.log('🔗 Associations entre modèles configurées');
@@ -146,6 +159,7 @@ module.exports = {
   User,
   Document,
   Projet,
+  Mission,
   
   // Fonctions utilitaires
   testConnection,
