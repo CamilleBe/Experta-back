@@ -70,6 +70,22 @@ const User = sequelize.define('User', {
     comment: 'Adresse email unique de l\'utilisateur'
   },
   
+  telephone: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    validate: {
+      len: {
+        args: [8, 20],
+        msg: 'Le numéro de téléphone doit contenir entre 8 et 20 caractères'
+      },
+      is: {
+        args: /^[\d\s\+\-\(\)\.]+$/,
+        msg: 'Le numéro de téléphone contient des caractères non valides'
+      }
+    },
+    comment: 'Numéro de téléphone de l\'utilisateur'
+  },
+  
   password: {
     type: DataTypes.STRING(255),
     allowNull: false,
