@@ -84,7 +84,7 @@ const createDefaultData = async () => {
         lastName: 'User',
         email: 'test@experta.com',
         password: 'Test123!',
-        role: 'user'
+        role: 'client'
       });
       
       console.log('👤 Utilisateur test créé: test@experta.com / Test123!');

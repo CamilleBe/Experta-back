@@ -86,13 +86,13 @@ const User = sequelize.define('User', {
   },
   
   role: {
-    type: DataTypes.ENUM('user', 'admin', 'moderator'),
-    defaultValue: 'user',
+    type: DataTypes.ENUM('client', 'AMO', 'partenaire', 'admin'),
+    defaultValue: 'client',
     allowNull: false,
     validate: {
       isIn: {
-        args: [['user', 'admin', 'moderator']],
-        msg: 'Le rôle doit être user, admin ou moderator'
+        args: [['client', 'AMO', 'partenaire', 'admin']],
+        msg: 'Le rôle doit être client, AMO, partenaire ou admin'
       }
     },
     comment: 'Rôle de l\'utilisateur dans l\'application'
