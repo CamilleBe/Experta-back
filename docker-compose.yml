@@ -105,6 +105,26 @@ services:
     networks:
       - app-network
 
+  # ================================================
+  # SERVICE PHPMYADMIN (Interface web alternative)
+  # ================================================
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: experta-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: experta_user
+      PMA_PASSWORD: secure_password_123
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
+    networks:
+      - app-network
+
 # ================================================
 # DÉFINITION DES VOLUMES PERSISTANTS
 # ================================================
