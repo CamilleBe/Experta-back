@@ -1,0 +1,78 @@
+# ================================================
+# .DOCKERIGNORE - OPTIMISATION DE L'IMAGE DOCKER
+# ================================================
+
+# POURQUOI .dockerignore ?
+# - Réduit la taille de l'image finale
+# - Accélère le build en excluant des fichiers inutiles
+# - Améliore la sécurité en évitant de copier des secrets
+
+# ================================================
+# FICHIERS ET DOSSIERS À EXCLURE
+# ================================================
+
+# Dépendances Node.js (seront installées via npm ci)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variables d'environnement sensibles
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Fichiers Git (historique non nécessaire en production)
+.git/
+.gitignore
+
+# Fichiers de développement
+*.log
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Documentation et fichiers README (optionnel selon vos besoins)
+README.md
+CHANGELOG.md
+*.md
+
+# Fichiers de test et coverage
+test/
+tests/
+__tests__/
+coverage/
+.nyc_output/
+
+# Fichiers Docker existants (évite la récursion)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Fichiers temporaires
+tmp/
+temp/
+.tmp/
+
+# Certificats et clés (SÉCURITÉ CRITIQUE)
+*.pem
+*.key
+*.crt
+*.p12
+
+# Builds et dossiers de distribution
+dist/
+build/
+out/
+
+# Cache et fichiers de lock (sauf package-lock.json)
+.cache/
+.parcel-cache/
+
+# Fichiers spécifiques à votre OS
+Thumbs.db
+.DS_Store 

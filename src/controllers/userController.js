@@ -1,20 +1,39 @@
-// Exemple de contrôleur pour les utilisateurs
-// Remplacez cette logique par votre propre logique métier
+// ================================================
+// CONTRÔLEUR UTILISATEURS AVEC SEQUELIZE
+// ================================================
+
+const { User } = require('../models');
 
 const getAllUsers = async (req, res) => {
   try {
-    // Logique pour récupérer tous les utilisateurs
-    const users = [
-      { id: 1, name: 'John Doe', email: 'john@example.com' },
-      { id: 2, name: 'Jane Smith', email: 'jane@example.com' }
-    ];
+    console.log('📋 Récupération de tous les utilisateurs...');
+    
+    // Récupérer tous les utilisateurs avec pagination
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    const { count, rows: users } = await User.findAndCountAll({
+      limit,
+      offset,
+      order: [['createdAt', 'DESC']],
+      attributes: { exclude: ['password'] } // Exclure le mot de passe
+    });
     
     res.status(200).json({
       success: true,
       data: users,
-      message: 'Utilisateurs récupérés avec succès'
+      pagination: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit)
+      },
+      message: `${users.length} utilisateur(s) récupéré(s) avec succès`
     });
+    
   } catch (error) {
+    console.error('❌ Erreur getAllUsers:', error.message);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des utilisateurs',
@@ -26,9 +45,19 @@ const getAllUsers = async (req, res) => {
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`🔍 Recherche de l'utilisateur ID: ${id}`);
     
-    // Logique pour récupérer un utilisateur par ID
-    const user = { id: parseInt(id), name: 'John Doe', email: 'john@example.com' };
+    // Validation de l'ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID utilisateur invalide'
+      });
+    }
+    
+    const user = await User.findByPk(id, {
+      attributes: { exclude: ['password'] }
+    });
     
     if (!user) {
       return res.status(404).json({
@@ -42,7 +71,9 @@ const getUserById = async (req, res) => {
       data: user,
       message: 'Utilisateur récupéré avec succès'
     });
+    
   } catch (error) {
+    console.error('❌ Erreur getUserById:', error.message);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération de l\'utilisateur',
@@ -53,25 +84,53 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { firstName, lastName, email, password, role } = req.body;
+    console.log(`👤 Création d'un nouvel utilisateur: ${email}`);
     
-    // Validation basique
-    if (!name || !email) {
+    // Validation des champs requis
+    if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Le nom et l\'email sont requis'
+        message: 'Le prénom, nom, email et mot de passe sont requis'
       });
     }
     
-    // Logique pour créer un nouvel utilisateur
-    const newUser = { id: Date.now(), name, email };
+    // Vérifier si l'email existe déjà
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      });
+    }
+    
+    // Créer le nouvel utilisateur
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password, // Sera hashé automatiquement par le hook
+      role: role || 'user'
+    });
     
     res.status(201).json({
       success: true,
-      data: newUser,
+      data: newUser, // Le mot de passe sera exclu par toJSON()
       message: 'Utilisateur créé avec succès'
     });
+    
   } catch (error) {
+    console.error('❌ Erreur createUser:', error.message);
+    
+    // Gestion des erreurs de validation Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: error.errors.map(err => err.message)
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création de l\'utilisateur',
@@ -83,17 +142,64 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email } = req.body;
+    const { firstName, lastName, email, role, isActive } = req.body;
+    console.log(`✏️ Mise à jour de l'utilisateur ID: ${id}`);
     
-    // Logique pour mettre à jour un utilisateur
-    const updatedUser = { id: parseInt(id), name, email };
+    // Validation de l'ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID utilisateur invalide'
+      });
+    }
+    
+    // Trouver l'utilisateur
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
+    // Vérifier si le nouvel email existe déjà (sauf pour cet utilisateur)
+    if (email && email !== user.email) {
+      const existingUser = await User.findByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: 'Cette adresse email est déjà utilisée'
+        });
+      }
+    }
+    
+    // Mettre à jour les champs
+    const updateData = {};
+    if (firstName) updateData.firstName = firstName;
+    if (lastName) updateData.lastName = lastName;
+    if (email) updateData.email = email;
+    if (role) updateData.role = role;
+    if (typeof isActive === 'boolean') updateData.isActive = isActive;
+    
+    await user.update(updateData);
     
     res.status(200).json({
       success: true,
-      data: updatedUser,
+      data: user,
       message: 'Utilisateur mis à jour avec succès'
     });
+    
   } catch (error) {
+    console.error('❌ Erreur updateUser:', error.message);
+    
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: error.errors.map(err => err.message)
+      });
+    }
+    
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour de l\'utilisateur',
@@ -105,14 +211,46 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`🗑️ Suppression de l'utilisateur ID: ${id}`);
     
-    // Logique pour supprimer un utilisateur
+    // Validation de l'ID
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID utilisateur invalide'
+      });
+    }
+    
+    // Trouver l'utilisateur
+    const user = await User.findByPk(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Utilisateur non trouvé'
+      });
+    }
+    
+    // Empêcher la suppression du dernier admin
+    if (user.role === 'admin') {
+      const adminCount = await User.count({ where: { role: 'admin' } });
+      if (adminCount <= 1) {
+        return res.status(403).json({
+          success: false,
+          message: 'Impossible de supprimer le dernier administrateur'
+        });
+      }
+    }
+    
+    // Supprimer l'utilisateur
+    await user.destroy();
     
     res.status(200).json({
       success: true,
       message: 'Utilisateur supprimé avec succès'
     });
+    
   } catch (error) {
+    console.error('❌ Erreur deleteUser:', error.message);
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression de l\'utilisateur',
