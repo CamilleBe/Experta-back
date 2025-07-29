@@ -6,14 +6,23 @@ const { sequelize, testConnection, syncDatabase } = require('../config/database'
 
 // Import des modèles
 const User = require('./User');
+const Document = require('./Document');
 
 // ================================================
 // ASSOCIATIONS ENTRE MODÈLES
 // ================================================
 
-// Exemple d'associations (à décommenter quand vous ajoutez d'autres modèles)
-// User.hasMany(Post, { foreignKey: 'userId', as: 'posts' });
-// Post.belongsTo(User, { foreignKey: 'userId', as: 'author' });
+// Associations User <-> Document
+User.hasMany(Document, { 
+  foreignKey: 'userId', 
+  as: 'documents',
+  onDelete: 'CASCADE'
+});
+
+Document.belongsTo(User, { 
+  foreignKey: 'userId', 
+  as: 'user'
+});
 
 console.log('🔗 Associations entre modèles configurées');
 
@@ -108,6 +117,7 @@ module.exports = {
   
   // Modèles
   User,
+  Document,
   
   // Fonctions utilitaires
   testConnection,
