@@ -79,7 +79,8 @@ const createDefaultData = async () => {
         lastName: 'System',
         email: 'admin@experta.com',
         password: 'Admin123!', // Sera hashé automatiquement par le hook
-        role: 'admin'
+        role: 'admin',
+        telephone: '+33 1 23 45 67 89'
       });
       
       console.log('👑 Utilisateur admin créé: admin@experta.com / Admin123!');
@@ -93,7 +94,8 @@ const createDefaultData = async () => {
         lastName: 'User',
         email: 'test@experta.com',
         password: 'Test123!',
-        role: 'client'
+        role: 'client',
+        telephone: '+33 6 12 34 56 78'
       });
       
       console.log('👤 Utilisateur test créé: test@experta.com / Test123!');

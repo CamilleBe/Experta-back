@@ -84,7 +84,7 @@ const getUserById = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, role } = req.body;
+    const { firstName, lastName, email, password, role, telephone } = req.body;
     console.log(`👤 Création d'un nouvel utilisateur: ${email}`);
     
     // Validation des champs requis
@@ -110,7 +110,8 @@ const createUser = async (req, res) => {
       lastName,
       email,
       password, // Sera hashé automatiquement par le hook
-      role: role || 'user'
+      role: role || 'client',
+      telephone
     });
     
     res.status(201).json({
@@ -142,7 +143,7 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   try {
     const { id } = req.params;
-    const { firstName, lastName, email, role, isActive } = req.body;
+    const { firstName, lastName, email, role, isActive, telephone } = req.body;
     console.log(`✏️ Mise à jour de l'utilisateur ID: ${id}`);
     
     // Validation de l'ID
@@ -180,6 +181,7 @@ const updateUser = async (req, res) => {
     if (email) updateData.email = email;
     if (role) updateData.role = role;
     if (typeof isActive === 'boolean') updateData.isActive = isActive;
+    if (telephone !== undefined) updateData.telephone = telephone;
     
     await user.update(updateData);
     
