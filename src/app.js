@@ -8,7 +8,22 @@ const { initializeDatabase } = require('./models');
 const app = express();
 
 // Middlewares
-app.use(cors());
+const allowedOrigins = [
+  'http://localhost:3000', // backend et potentiellement front en dev
+  'http://localhost:5173', // front en développement (Vite)
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Autoriser les requêtes sans origin (ex: Postman) ou si l'origine est dans la liste
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true // si tu utilises les cookies ou l'authentification
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
