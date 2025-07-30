@@ -22,7 +22,8 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true // si tu utilises les cookies ou l'authentification
+  credentials: true, // si tu utilises les cookies ou l'authentification
+  allowedHeaders: ['Authorization', 'X-Requested-With', 'Content-Type', 'Accept'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
