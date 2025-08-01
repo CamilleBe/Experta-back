@@ -5,11 +5,14 @@ const userController = require('../controllers/userController');
 // Route pour obtenir tous les utilisateurs
 router.get('/', userController.getAllUsers);
 
-// Route pour obtenir un utilisateur par ID
-router.get('/:id', userController.getUserById);
-
 // Route pour créer un nouvel utilisateur
 router.post('/', userController.createUser);
+
+// Route pour la connexion
+router.post('/login', userController.loginUser);
+
+// Route pour obtenir un utilisateur par ID
+router.get('/:id', userController.getUserById);
 
 // Route pour mettre à jour un utilisateur
 router.put('/:id', userController.updateUser);

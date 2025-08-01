@@ -518,6 +518,100 @@ const removeTagMetierFromUser = async (req, res) => {
   }
 };
 
+const loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    console.log(`🔐 Tentative de connexion pour: ${email}`);
+    console.log(`📝 Mot de passe reçu: ${password ? 'OUI' : 'NON'}`);
+    
+    // Validation des champs requis
+    if (!email || !password) {
+      console.log('❌ Champs manquants');
+      return res.status(400).json({
+        success: false,
+        message: 'Email et mot de passe sont requis'
+      });
+    }
+    
+    console.log('🔍 Recherche utilisateur en base...');
+    // Rechercher l'utilisateur par email
+    const user = await User.findOne({ 
+      where: { email: email.toLowerCase() },
+      attributes: { include: ['password'] } // Inclure le mot de passe pour la vérification
+    });
+    
+    console.log(`👤 Utilisateur trouvé: ${user ? 'OUI' : 'NON'}`);
+    if (user) {
+      console.log(`🔑 Hash en base: ${user.password ? 'OUI' : 'NON'}`);
+      console.log(`📧 Email en base: ${user.email}`);
+    }
+    
+    if (!user) {
+      console.log('❌ Utilisateur non trouvé');
+      return res.status(401).json({
+        success: false,
+        message: 'Email ou mot de passe incorrect'
+      });
+    }
+    
+    console.log('🔓 Vérification du mot de passe...');
+    // Vérifier le mot de passe (supposons qu'il est hashé avec bcrypt)
+    const bcrypt = require('bcryptjs');
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log(`✅ Mot de passe valide: ${isValidPassword ? 'OUI' : 'NON'}`);
+    
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: 'Email ou mot de passe incorrect'
+      });
+    }
+    
+    // Générer le token JWT
+    const jwt = require('jsonwebtoken');
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role 
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    // Retourner les données utilisateur (sans le mot de passe) et le token
+    const userWithoutPassword = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      telephone: user.telephone,
+      zoneIntervention: user.zoneIntervention,
+      nomEntreprise: user.nomEntreprise,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt
+    };
+    
+    res.status(200).json({
+      success: true,
+      message: 'Connexion réussie',
+      data: {
+        user: userWithoutPassword,
+        token: token
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur loginUser:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la connexion',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -529,5 +623,6 @@ module.exports = {
   getTopProfessionals,
   getPopularTagsMetiers,
   addTagMetierToUser,
-  removeTagMetierFromUser
+  removeTagMetierFromUser,
+  loginUser
 }; 
