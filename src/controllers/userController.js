@@ -603,14 +603,14 @@ const loginUser = async (req, res) => {
 
 const registerAMO = async (req, res) => {
   try {
-    const { firstName, lastName, email, password, passwordConfirm, telephone } = req.body;
+    const { firstName, lastName, email, password, passwordConfirm, telephone, siret } = req.body;
     console.log(`👨‍💼 Inscription d'un nouveau professionnel AMO: ${email}`);
     
     // Validation des champs requis pour les AMO
-    if (!firstName || !lastName || !email || !password || !passwordConfirm || !telephone) {
+    if (!firstName || !lastName || !email || !password || !passwordConfirm || !telephone || !siret) {
       return res.status(400).json({
         success: false,
-        message: 'Tous les champs sont requis pour l\'inscription AMO (prénom, nom, email, mot de passe, confirmation mot de passe, téléphone)'
+        message: 'Tous les champs sont requis pour l\'inscription AMO (prénom, nom, email, mot de passe, confirmation mot de passe, téléphone, numéro SIRET)'
       });
     }
     
@@ -639,6 +639,15 @@ const registerAMO = async (req, res) => {
       });
     }
     
+    // Validation du SIRET (14 chiffres)
+    const siretRegex = /^\d{14}$/;
+    if (!siretRegex.test(siret)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le numéro SIRET doit contenir exactement 14 chiffres'
+      });
+    }
+    
     // Vérifier si l'email existe déjà
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
@@ -656,6 +665,7 @@ const registerAMO = async (req, res) => {
       password, // Sera hashé automatiquement par le hook
       role: 'AMO', // Forcé à AMO pour cette route
       telephone: telephone.trim(),
+      siret: siret.trim(),
       isActive: true
     };
     
@@ -702,15 +712,15 @@ const registerPartner = async (req, res) => {
   try {
     const { 
       firstName, lastName, nomEntreprise, email, password, passwordConfirm, 
-      telephone, tagsMetiers, zoneIntervention, siteWeb 
+      telephone, tagsMetiers, zoneIntervention, siteWeb, siret 
     } = req.body;
     console.log(`🏗️ Inscription d'un nouveau professionnel du bâtiment: ${email}`);
     
     // Validation des champs requis pour les partenaires
-    if (!firstName || !lastName || !nomEntreprise || !email || !password || !passwordConfirm || !telephone) {
+    if (!firstName || !lastName || !nomEntreprise || !email || !password || !passwordConfirm || !telephone || !siret) {
       return res.status(400).json({
         success: false,
-        message: 'Tous les champs obligatoires sont requis (prénom, nom, nom entreprise, email, mot de passe, confirmation mot de passe, téléphone)'
+        message: 'Tous les champs obligatoires sont requis (prénom, nom, nom entreprise, email, mot de passe, confirmation mot de passe, téléphone, numéro SIRET)'
       });
     }
     
@@ -736,6 +746,15 @@ const registerPartner = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Le format du numéro de téléphone n\'est pas valide'
+      });
+    }
+    
+    // Validation du SIRET (14 chiffres)
+    const siretRegex = /^\d{14}$/;
+    if (!siretRegex.test(siret)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le numéro SIRET doit contenir exactement 14 chiffres'
       });
     }
     
@@ -784,6 +803,7 @@ const registerPartner = async (req, res) => {
       password, // Sera hashé automatiquement par le hook
       role: 'partenaire', // Forcé à partenaire pour cette route
       telephone: telephone.trim(),
+      siret: siret.trim(),
       tagsMetiers: tagsMetiers.map(tag => tag.toString().toLowerCase().trim()).filter(tag => tag.length > 0),
       zoneIntervention: zoneIntervention.map(zone => zone.toString().trim()).filter(zone => zone.length > 0),
       siteWeb: siteWeb && siteWeb.trim() !== '' ? siteWeb.trim() : null,

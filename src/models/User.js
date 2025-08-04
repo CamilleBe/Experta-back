@@ -151,6 +151,31 @@ const User = sequelize.define('User', {
     comment: 'Site web de l\'entreprise du professionnel'
   },
   
+  siret: {
+    type: DataTypes.STRING(14),
+    allowNull: true,
+    field: 'siret',
+    validate: {
+      len: {
+        args: [14, 14],
+        msg: 'Le numéro SIRET doit contenir exactement 14 chiffres'
+      },
+      isNumeric: {
+        msg: 'Le numéro SIRET doit contenir uniquement des chiffres'
+      },
+      isSiretValid(value) {
+        if (value && value.length === 14) {
+          // Validation basique du format SIRET (14 chiffres)
+          const siretRegex = /^\d{14}$/;
+          if (!siretRegex.test(value)) {
+            throw new Error('Le numéro SIRET doit contenir exactement 14 chiffres');
+          }
+        }
+      }
+    },
+    comment: 'Numéro SIRET de l\'entreprise (14 chiffres)'
+  },
+  
   noteFiabilite: {
     type: DataTypes.FLOAT,
     allowNull: true,
