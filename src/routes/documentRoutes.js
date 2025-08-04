@@ -1,16 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const documentController = require('../controllers/documentController');
+const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
 
-// Routes CRUD de base
-router.get('/', documentController.getAllDocuments);
-router.get('/:id', documentController.getDocumentById);
-router.post('/', documentController.createDocument);
-router.put('/:id', documentController.updateDocument);
-router.delete('/:id', documentController.deleteDocument);
+// Routes CRUD de base (authentification requise)
+router.get('/', authenticateToken, documentController.getAllDocuments);
+router.get('/:id', authenticateToken, documentController.getDocumentById);
+router.post('/', authenticateToken, documentController.createDocument);
+router.put('/:id', authenticateToken, documentController.updateDocument);
+router.delete('/:id', authenticateToken, authorizeRole(['admin', 'AMO']), documentController.deleteDocument);
 
-// Routes spécialisées
-router.get('/user/:userId', documentController.getDocumentsByUser);
-router.get('/type/:type', documentController.getDocumentsByType);
+// Routes spécialisées (authentification requise)
+router.get('/user/:userId', authenticateToken, documentController.getDocumentsByUser);
+router.get('/type/:type', authenticateToken, documentController.getDocumentsByType);
 
 module.exports = router; 
