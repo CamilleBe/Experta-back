@@ -1,24 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const userController = require('../controllers/userController');
+const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
 
-// Route pour obtenir tous les utilisateurs
-router.get('/', userController.getAllUsers);
+// Route pour obtenir tous les utilisateurs (authentification requise)
+router.get('/', authenticateToken, userController.getAllUsers);
 
-// Route pour créer un nouvel utilisateur
+// Route pour créer un nouvel utilisateur (publique pour l'inscription)
 router.post('/', userController.createUser);
 
-// Route pour la connexion
+// Route pour la connexion (publique)
 router.post('/login', userController.loginUser);
 
-// Route pour obtenir un utilisateur par ID
-router.get('/:id', userController.getUserById);
+// Route pour obtenir un utilisateur par ID (authentification requise)
+router.get('/:id', authenticateToken, userController.getUserById);
 
-// Route pour mettre à jour un utilisateur
-router.put('/:id', userController.updateUser);
+// Route pour mettre à jour un utilisateur (authentification requise)
+router.put('/:id', authenticateToken, userController.updateUser);
 
-// Route pour supprimer un utilisateur
-router.delete('/:id', userController.deleteUser);
+// Route pour supprimer un utilisateur (admin seulement)
+router.delete('/:id', authenticateToken, authorizeRole(['admin']), userController.deleteUser);
 
 // Routes spécialisées pour les professionnels
 router.get('/professionals/tag/:tag', userController.getProfessionalsByTag);
@@ -26,8 +27,8 @@ router.get('/professionals/zone/:zone', userController.getProfessionalsByZone);
 router.get('/professionals/top', userController.getTopProfessionals);
 router.get('/professionals/stats/popular-tags', userController.getPopularTagsMetiers);
 
-// Routes pour la gestion des tags métiers
-router.post('/:id/tags-metiers', userController.addTagMetierToUser);
-router.delete('/:id/tags-metiers', userController.removeTagMetierFromUser);
+// Routes pour la gestion des tags métiers (authentification requise)
+router.post('/:id/tags-metiers', authenticateToken, userController.addTagMetierToUser);
+router.delete('/:id/tags-metiers', authenticateToken, userController.removeTagMetierFromUser);
 
 module.exports = router; 

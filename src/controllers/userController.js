@@ -522,43 +522,32 @@ const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
     console.log(`🔐 Tentative de connexion pour: ${email}`);
-    console.log(`📝 Mot de passe reçu: ${password ? 'OUI' : 'NON'}`);
     
     // Validation des champs requis
     if (!email || !password) {
-      console.log('❌ Champs manquants');
       return res.status(400).json({
         success: false,
         message: 'Email et mot de passe sont requis'
       });
     }
     
-    console.log('🔍 Recherche utilisateur en base...');
     // Rechercher l'utilisateur par email
     const user = await User.findOne({ 
       where: { email: email.toLowerCase() },
       attributes: { include: ['password'] } // Inclure le mot de passe pour la vérification
     });
     
-    console.log(`👤 Utilisateur trouvé: ${user ? 'OUI' : 'NON'}`);
-    if (user) {
-      console.log(`🔑 Hash en base: ${user.password ? 'OUI' : 'NON'}`);
-      console.log(`📧 Email en base: ${user.email}`);
-    }
-    
     if (!user) {
-      console.log('❌ Utilisateur non trouvé');
       return res.status(401).json({
         success: false,
         message: 'Email ou mot de passe incorrect'
       });
     }
-    
-    console.log('🔓 Vérification du mot de passe...');
+
     // Vérifier le mot de passe (supposons qu'il est hashé avec bcrypt)
     const bcrypt = require('bcryptjs');
     const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log(`✅ Mot de passe valide: ${isValidPassword ? 'OUI' : 'NON'}`);
+
     
     if (!isValidPassword) {
       return res.status(401).json({
