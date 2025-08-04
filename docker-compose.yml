@@ -32,7 +32,7 @@ services:
     
     # Variables d'environnement pour Docker
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
       # Connexion à la base de données MySQL
       - DB_HOST=mysql
@@ -54,6 +54,8 @@ services:
     # Volumes pour la persistance des logs (optionnel)
     volumes:
       - ./logs:/app/logs
+      - ./src:/app/src  # Synchronise le dossier src
+      - ./server.js:/app/server.js
 
   # ================================================
   # SERVICE BASE DE DONNÉES MYSQL
