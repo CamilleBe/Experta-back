@@ -143,7 +143,7 @@ const User = sequelize.define('User', {
     validate: {
       min: {
         args: [0],
-        msg: 'La note de fiabilité ne peut pas être négative'
+        msg: 'La note de fiabilité ne peut pas être négativee'
       },
       max: {
         args: [5],
