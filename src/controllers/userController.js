@@ -698,6 +698,139 @@ const registerAMO = async (req, res) => {
   }
 };
 
+const registerPartner = async (req, res) => {
+  try {
+    const { 
+      firstName, lastName, nomEntreprise, email, password, passwordConfirm, 
+      telephone, tagsMetiers, zoneIntervention, siteWeb 
+    } = req.body;
+    console.log(`🏗️ Inscription d'un nouveau professionnel du bâtiment: ${email}`);
+    
+    // Validation des champs requis pour les partenaires
+    if (!firstName || !lastName || !nomEntreprise || !email || !password || !passwordConfirm || !telephone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tous les champs obligatoires sont requis (prénom, nom, nom entreprise, email, mot de passe, confirmation mot de passe, téléphone)'
+      });
+    }
+    
+    // Vérification de la confirmation du mot de passe
+    if (password !== passwordConfirm) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe et sa confirmation ne correspondent pas'
+      });
+    }
+    
+    // Validation renforcée du mot de passe pour les professionnels
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe doit contenir au moins 8 caractères pour les professionnels'
+      });
+    }
+    
+    // Validation du format téléphone
+    const phoneRegex = /^[\d\s\+\-\(\)\.]{8,20}$/;
+    if (!phoneRegex.test(telephone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le format du numéro de téléphone n\'est pas valide'
+      });
+    }
+    
+    // Validation des tags métiers (au moins un requis)
+    if (!tagsMetiers || !Array.isArray(tagsMetiers) || tagsMetiers.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Au moins un tag métier est requis (ex: plombier, maçon, électricien...)'
+      });
+    }
+    
+    // Validation des zones d'intervention (au moins une requise)
+    if (!zoneIntervention || !Array.isArray(zoneIntervention) || zoneIntervention.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Au moins une zone d\'intervention est requise (villes ou départements)'
+      });
+    }
+    
+    // Validation optionnelle du site web
+    if (siteWeb && siteWeb.trim() !== '') {
+      const urlRegex = /^https?:\/\/.+/;
+      if (!urlRegex.test(siteWeb.trim())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Le site web doit commencer par http:// ou https://'
+        });
+      }
+    }
+    
+    // Vérifier si l'email existe déjà
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      });
+    }
+    
+    // Préparer les données spécifiques pour un partenaire
+    const partnerData = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      nomEntreprise: nomEntreprise.trim(),
+      email: email.toLowerCase().trim(),
+      password, // Sera hashé automatiquement par le hook
+      role: 'partenaire', // Forcé à partenaire pour cette route
+      telephone: telephone.trim(),
+      tagsMetiers: tagsMetiers.map(tag => tag.toString().toLowerCase().trim()).filter(tag => tag.length > 0),
+      zoneIntervention: zoneIntervention.map(zone => zone.toString().trim()).filter(zone => zone.length > 0),
+      siteWeb: siteWeb && siteWeb.trim() !== '' ? siteWeb.trim() : null,
+      isActive: true
+    };
+    
+    // Créer le nouveau partenaire
+    const newPartner = await User.create(partnerData);
+    
+    console.log(`✅ Professionnel du bâtiment ${newPartner.email} créé avec succès`);
+    console.log(`🏷️ Tags métiers: ${newPartner.tagsMetiers.join(', ')}`);
+    console.log(`🌍 Zones d'intervention: ${newPartner.zoneIntervention.join(', ')}`);
+    
+    res.status(201).json({
+      success: true,
+      data: newPartner, // Le mot de passe sera exclu par toJSON()
+      message: 'Inscription professionnelle réussie ! Bienvenue dans notre réseau de partenaires du bâtiment.'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur registerPartner:', error.message);
+    
+    // Gestion des erreurs de validation Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: error.errors.map(err => err.message)
+      });
+    }
+    
+    // Gestion des erreurs d'unicité
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'inscription du partenaire',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -711,5 +844,6 @@ module.exports = {
   addTagMetierToUser,
   removeTagMetierFromUser,
   loginUser,
-  registerAMO
+  registerAMO,
+  registerPartner
 }; 

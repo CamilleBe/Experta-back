@@ -135,6 +135,22 @@ const User = sequelize.define('User', {
     comment: 'Nom de l\'entreprise du professionnel'
   },
   
+  siteWeb: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'site_web',
+    validate: {
+      isUrl: {
+        msg: 'L\'adresse du site web n\'est pas valide'
+      },
+      len: {
+        args: [0, 255],
+        msg: 'L\'adresse du site web ne peut pas dépasser 255 caractères'
+      }
+    },
+    comment: 'Site web de l\'entreprise du professionnel'
+  },
+  
   noteFiabilite: {
     type: DataTypes.FLOAT,
     allowNull: true,
@@ -553,6 +569,7 @@ User.prototype.toJSON = function() {
     values.tagsCount = this.tagsMetiers ? this.tagsMetiers.length : 0;
     values.zonesCount = this.zoneIntervention ? this.zoneIntervention.length : 0;
     values.hasNote = this.noteFiabilite !== null;
+    values.hasSiteWeb = this.siteWeb !== null && this.siteWeb !== '';
   } else {
     values.isProfessional = false;
   }

@@ -12,6 +12,9 @@ router.post('/', userController.createUser);
 // Route pour l'inscription spécialisée AMO (publique)
 router.post('/register-amo', userController.registerAMO);
 
+// Route pour l'inscription des professionnels du bâtiment (publique)
+router.post('/register-partner', userController.registerPartner);
+
 // Route pour la connexion (publique)
 router.post('/login', userController.loginUser);
 
