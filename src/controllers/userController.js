@@ -601,6 +601,103 @@ const loginUser = async (req, res) => {
   }
 };
 
+const registerAMO = async (req, res) => {
+  try {
+    const { firstName, lastName, email, password, passwordConfirm, telephone } = req.body;
+    console.log(`👨‍💼 Inscription d'un nouveau professionnel AMO: ${email}`);
+    
+    // Validation des champs requis pour les AMO
+    if (!firstName || !lastName || !email || !password || !passwordConfirm || !telephone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tous les champs sont requis pour l\'inscription AMO (prénom, nom, email, mot de passe, confirmation mot de passe, téléphone)'
+      });
+    }
+    
+    // Vérification de la confirmation du mot de passe
+    if (password !== passwordConfirm) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe et sa confirmation ne correspondent pas'
+      });
+    }
+    
+    // Validation renforcée du mot de passe pour les professionnels
+    if (password.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le mot de passe doit contenir au moins 8 caractères pour les professionnels'
+      });
+    }
+    
+    // Validation du format téléphone (basique)
+    const phoneRegex = /^[\d\s\+\-\(\)\.]{8,20}$/;
+    if (!phoneRegex.test(telephone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le format du numéro de téléphone n\'est pas valide'
+      });
+    }
+    
+    // Vérifier si l'email existe déjà
+    const existingUser = await User.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      });
+    }
+    
+    // Préparer les données spécifiques pour un AMO
+    const amoData = {
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      email: email.toLowerCase().trim(),
+      password, // Sera hashé automatiquement par le hook
+      role: 'AMO', // Forcé à AMO pour cette route
+      telephone: telephone.trim(),
+      isActive: true
+    };
+    
+    // Créer le nouvel AMO
+    const newAMO = await User.create(amoData);
+    
+    console.log(`✅ Professionnel AMO ${newAMO.email} créé avec succès`);
+    
+    res.status(201).json({
+      success: true,
+      data: newAMO, // Le mot de passe sera exclu par toJSON()
+      message: 'Inscription AMO réussie ! Bienvenue dans la communauté des professionnels.'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur registerAMO:', error.message);
+    
+    // Gestion des erreurs de validation Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({
+        success: false,
+        message: 'Données invalides',
+        errors: error.errors.map(err => err.message)
+      });
+    }
+    
+    // Gestion des erreurs d'unicité
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: 'Cette adresse email est déjà utilisée'
+      });
+    }
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'inscription AMO',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getUserById,
@@ -613,5 +710,6 @@ module.exports = {
   getPopularTagsMetiers,
   addTagMetierToUser,
   removeTagMetierFromUser,
-  loginUser
+  loginUser,
+  registerAMO
 }; 

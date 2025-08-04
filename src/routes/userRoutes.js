@@ -6,8 +6,11 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // Route pour obtenir tous les utilisateurs (authentification requise)
 router.get('/', authenticateToken, userController.getAllUsers);
 
-// Route pour créer un nouvel utilisateur (publique pour l'inscription)
+// Route pour créer un nouvel utilisateur (publique pour l'inscription client)
 router.post('/', userController.createUser);
+
+// Route pour l'inscription spécialisée AMO (publique)
+router.post('/register-amo', userController.registerAMO);
 
 // Route pour la connexion (publique)
 router.post('/login', userController.loginUser);
