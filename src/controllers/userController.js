@@ -544,9 +544,16 @@ const loginUser = async (req, res) => {
       });
     }
 
-    // Vérifier le mot de passe (supposons qu'il est hashé avec bcrypt)
-    const bcrypt = require('bcryptjs');
-    const isValidPassword = await bcrypt.compare(password, user.password);
+    // Vérifier si le compte est actif
+    if (!user.isActive) {
+      return res.status(401).json({
+        success: false,
+        message: 'Compte désactivé - Contactez l\'administrateur'
+      });
+    }
+
+    // Vérifier le mot de passe avec la méthode du modèle
+    const isValidPassword = await user.comparePassword(password);
 
     
     if (!isValidPassword) {
@@ -568,25 +575,14 @@ const loginUser = async (req, res) => {
       { expiresIn: '24h' }
     );
     
-    // Retourner les données utilisateur (sans le mot de passe) et le token
-    const userWithoutPassword = {
-      id: user.id,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      role: user.role,
-      telephone: user.telephone,
-      zoneIntervention: user.zoneIntervention,
-      nomEntreprise: user.nomEntreprise,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt
-    };
+    // Mettre à jour la dernière connexion
+    await user.updateLastLogin();
     
     res.status(200).json({
       success: true,
       message: 'Connexion réussie',
       data: {
-        user: userWithoutPassword,
+        user: user.toJSON(), // Utilise la méthode toJSON du modèle (exclut déjà le password)
         token: token
       }
     });
