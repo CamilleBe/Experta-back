@@ -572,7 +572,7 @@ const loginUser = async (req, res) => {
         role: user.role 
       },
       process.env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
     );
     
     // Mettre à jour la dernière connexion

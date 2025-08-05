@@ -41,6 +41,7 @@ services:
       - DB_USER=experta_user
       - DB_PASSWORD=secure_password_123
       - JWT_SECRET=your-super-secret-jwt-key-for-production
+      - JWT_EXPIRES_IN=24h
     
     # Dépendances : attendre que MySQL soit prêt
     depends_on:
