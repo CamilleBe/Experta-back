@@ -47,7 +47,7 @@ Créer un nouveau projet via le formulaire de la page d'accueil.
 | `clientLastName` | `string` | 2-50 caractères | Nom du client |
 | `clientEmail` | `string` | Format email valide | Email du client |
 | `clientPhone` | `string` | Numéro français valide | Téléphone du client |
-| `clientPassword` | `string` | 8+ caractères, 1 maj, 1 min, 1 chiffre | Mot de passe du compte client |
+| `clientPassword` | `string` | 8+ caractères minimum | Mot de passe du compte client |
 
 ### **Champs Optionnels - Projet**
 
@@ -224,8 +224,7 @@ const response = await fetch('/api/projets', {
     "L'email doit être valide",
     "Le numéro de téléphone doit être un numéro français valide",
     "Le mot de passe est obligatoire",
-    "Le mot de passe doit contenir au moins 8 caractères",
-    "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre"
+    "Le mot de passe doit contenir au moins 8 caractères"
   ]
 }
 ```

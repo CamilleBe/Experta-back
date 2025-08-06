@@ -125,8 +125,6 @@ const validateProjectCreation = (req, res, next) => {
       errors.push('Le mot de passe est obligatoire');
     } else if (clientPassword.length < 8) {
       errors.push('Le mot de passe doit contenir au moins 8 caractères');
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(clientPassword)) {
-      errors.push('Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre');
     }
   }
 
