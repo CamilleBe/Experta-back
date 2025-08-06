@@ -512,6 +512,83 @@ const getProjetsByStatus = async (req, res) => {
   }
 };
 
+// ================================================
+// ENDPOINT SPÉCIFIQUE DASHBOARD CLIENT
+// ================================================
+
+const getMyProjets = async (req, res) => {
+  try {
+    const clientId = req.user.id;
+    console.log(`📋 Dashboard - Récupération des projets pour le client connecté ID: ${clientId}`);
+    
+    // Vérifier que l'utilisateur est bien un client
+    if (req.user.role !== 'client') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé - Seuls les clients peuvent accéder à leur dashboard'
+      });
+    }
+    
+    // Récupérer tous les projets du client avec statistiques
+    const projets = await Projet.findByClientId(clientId, {
+      include: [
+        {
+          model: User,
+          as: 'amo',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'telephone'],
+          required: false
+        },
+        {
+          model: Mission,
+          as: 'missions',
+          where: { isActive: true },
+          required: false,
+          attributes: ['id', 'titre', 'statut', 'createdAt']
+        }
+      ]
+    });
+    
+    // Calculer les statistiques pour le dashboard
+    const stats = {
+      total: projets.length,
+      enCours: projets.filter(p => p.isInProgress()).length,
+      termines: projets.filter(p => p.isCompleted()).length,
+      brouillons: projets.filter(p => p.statut === 'brouillon').length,
+      budgetTotal: projets.reduce((sum, p) => sum + (p.budget || 0), 0)
+    };
+    
+    // Ajouter des informations calculées à chaque projet
+    const projetsEnriches = projets.map(projet => {
+      const projetJson = projet.toJSON();
+      return {
+        ...projetJson,
+        estEnCours: projet.isInProgress(),
+        estTermine: projet.isCompleted(),
+        budgetFormate: projet.getFormattedBudget(),
+        dureeJours: projet.getProjectDuration(),
+        adresseComplete: projet.getFullAddress()
+      };
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        projets: projetsEnriches,
+        statistiques: stats
+      },
+      message: `Dashboard client - ${projets.length} projet(s) récupéré(s)`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getMyProjets (dashboard):', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des projets du dashboard',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   getAllProjets,
   getProjetById,
@@ -520,5 +597,6 @@ module.exports = {
   deleteProjet,
   getProjetsByClient,
   getProjetsByAMO,
-  getProjetsByStatus
+  getProjetsByStatus,
+  getMyProjets
 }; 

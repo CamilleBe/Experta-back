@@ -18,6 +18,7 @@ router.put('/:id', authenticateToken, authorizeRole(['client', 'AMO', 'admin']),
 router.delete('/:id', authenticateToken, authorizeRole(['admin', 'AMO']), projetController.deleteProjet);
 
 // Routes spécialisées (authentification requise)
+router.get('/my-projects', authenticateToken, authorizeRole(['client']), projetController.getMyProjets);
 router.get('/client/:clientId', authenticateToken, projetController.getProjetsByClient);
 router.get('/amo/:amoId', authenticateToken, projetController.getProjetsByAMO);
 router.get('/status/:statut', authenticateToken, projetController.getProjetsByStatus);
