@@ -1,13 +1,20 @@
 const express = require('express');
 const router = express.Router();
 const projetController = require('../controllers/projetController');
-const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
+const { 
+  authenticateToken, 
+  authorizeRole, 
+  optionalAuthenticateToken, 
+  authorizeClientOrAnonymous 
+} = require('../middlewares/authMiddleware');
+const { validateProjectCreation, validateProjectUpdate } = require('../middlewares/validateProject');
 
 // Routes CRUD de base (authentification requise)
 router.get('/', authenticateToken, projetController.getAllProjets);
 router.get('/:id', authenticateToken, projetController.getProjetById);
-router.post('/', authenticateToken, authorizeRole(['client', 'AMO', 'admin']), projetController.createProjet);
-router.put('/:id', authenticateToken, authorizeRole(['client', 'AMO', 'admin']), projetController.updateProjet);
+// Route pour création de projet - authentification optionnelle (clients connectés ou anonymes)
+router.post('/', optionalAuthenticateToken, authorizeClientOrAnonymous, validateProjectCreation, projetController.createProjet);
+router.put('/:id', authenticateToken, authorizeRole(['client', 'AMO', 'admin']), validateProjectUpdate, projetController.updateProjet);
 router.delete('/:id', authenticateToken, authorizeRole(['admin', 'AMO']), projetController.deleteProjet);
 
 // Routes spécialisées (authentification requise)

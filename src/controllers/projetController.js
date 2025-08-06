@@ -127,33 +127,61 @@ const getProjetById = async (req, res) => {
 const createProjet = async (req, res) => {
   try {
     const { 
-      clientId, description, address, city, postalCode, 
-      budget, surfaceM2, bedrooms, houseType, hasLand 
+      description, address, city, postalCode, 
+      budget, surfaceM2, bedrooms, houseType, hasLand,
+      // Champs pour utilisateurs non connectés
+      clientFirstName, clientLastName, clientEmail, clientPhone
     } = req.body;
-    console.log(`🏗️ Création d'un nouveau projet pour le client ID: ${clientId}`);
     
-    // Validation des champs requis
-    if (!clientId || !description || !address || !city || !postalCode) {
-      return res.status(400).json({
-        success: false,
-        message: 'clientId, description, address, city et postalCode sont requis'
-      });
-    }
+    let clientId;
+    let isNewUser = false;
     
-    // Vérifier que le client existe et a le bon rôle
-    const client = await User.findByPk(clientId);
-    if (!client) {
-      return res.status(404).json({
-        success: false,
-        message: 'Client non trouvé'
-      });
-    }
+    // ================================================
+    // GESTION UTILISATEUR CONNECTÉ VS NON CONNECTÉ
+    // ================================================
     
-    if (client.role !== 'client') {
-      return res.status(403).json({
-        success: false,
-        message: 'L\'utilisateur doit avoir le rôle client'
-      });
+    if (req.user) {
+      // Utilisateur connecté - utiliser son ID
+      clientId = req.user.id;
+      console.log(`🏗️ Création d'un nouveau projet pour le client connecté ID: ${clientId}`);
+      
+      // Vérification du rôle déjà faite par le middleware authorizeClientOrAnonymous
+      
+    } else {
+      // Utilisateur non connecté - créer ou trouver un compte client
+      console.log(`🏗️ Création d'un projet pour un utilisateur anonyme: ${clientEmail}`);
+      
+      // Vérifier si un utilisateur avec cet email existe déjà
+      let existingUser = await User.findOne({ where: { email: clientEmail } });
+      
+      if (existingUser) {
+        // Utilisateur existe déjà
+        if (existingUser.role !== 'client') {
+          return res.status(409).json({
+            success: false,
+            message: 'Un compte avec cet email existe déjà mais n\'est pas un compte client. Veuillez vous connecter.'
+          });
+        }
+        
+        clientId = existingUser.id;
+        console.log(`👤 Utilisateur existant trouvé: ${existingUser.email}`);
+        
+      } else {
+        // Créer un nouveau compte client
+        const newUser = await User.create({
+          firstName: clientFirstName,
+          lastName: clientLastName,
+          email: clientEmail,
+          telephone: clientPhone,
+          role: 'client',
+          password: null, // Pas de mot de passe - devra en créer un pour se connecter
+          isActive: true
+        });
+        
+        clientId = newUser.id;
+        isNewUser = true;
+        console.log(`👤 Nouvel utilisateur créé: ${newUser.email} (ID: ${clientId})`);
+      }
     }
     
     const newProjet = await Projet.create({
@@ -189,7 +217,9 @@ const createProjet = async (req, res) => {
     res.status(201).json({
       success: true,
       data: projetWithRelations,
-      message: 'Projet créé avec succès'
+      message: 'Projet créé avec succès',
+      userCreated: isNewUser, // Indique si un nouveau compte utilisateur a été créé
+      needsPasswordSetup: isNewUser // Pour indiquer au frontend qu'il faut configurer un mot de passe
     });
     
   } catch (error) {
@@ -199,14 +229,29 @@ const createProjet = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Données invalides',
-        errors: error.errors.map(err => err.message)
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message,
+          value: err.value
+        }))
+      });
+    }
+    
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({
+        success: false,
+        message: 'Un projet avec ces caractéristiques existe déjà',
+        errors: error.errors.map(err => ({
+          field: err.path,
+          message: err.message
+        }))
       });
     }
     
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création du projet',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
     });
   }
 };
