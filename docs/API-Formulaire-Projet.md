@@ -47,6 +47,7 @@ Créer un nouveau projet via le formulaire de la page d'accueil.
 | `clientLastName` | `string` | 2-50 caractères | Nom du client |
 | `clientEmail` | `string` | Format email valide | Email du client |
 | `clientPhone` | `string` | Numéro français valide | Téléphone du client |
+| `clientPassword` | `string` | 8+ caractères, 1 maj, 1 min, 1 chiffre | Mot de passe du compte client |
 
 ### **Champs Optionnels - Projet**
 
@@ -104,7 +105,8 @@ const projetDataAnonymous = {
   clientFirstName: "Jean",
   clientLastName: "Dupont",
   clientEmail: "jean.dupont@email.com",
-  clientPhone: "0123456789"
+  clientPhone: "0123456789",
+  clientPassword: "MonMotDePasse123!"
 };
 
 // Requête sans token d'authentification
@@ -156,7 +158,7 @@ const response = await fetch('/api/projets', {
   },
   "message": "Projet créé avec succès",
   "userCreated": false,
-  "needsPasswordSetup": false
+  "accountReady": true
 }
 ```
 
@@ -192,7 +194,7 @@ const response = await fetch('/api/projets', {
   },
   "message": "Projet créé avec succès",
   "userCreated": true,
-  "needsPasswordSetup": true
+  "accountReady": true
 }
 ```
 
@@ -220,7 +222,10 @@ const response = await fetch('/api/projets', {
     "Le prénom du client est obligatoire",
     "L'email du client est obligatoire",
     "L'email doit être valide",
-    "Le numéro de téléphone doit être un numéro français valide"
+    "Le numéro de téléphone doit être un numéro français valide",
+    "Le mot de passe est obligatoire",
+    "Le mot de passe doit contenir au moins 8 caractères",
+    "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre"
   ]
 }
 ```

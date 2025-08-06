@@ -7,7 +7,7 @@ const validateProjectCreation = (req, res, next) => {
     description, address, city, postalCode, 
     budget, surfaceM2, bedrooms, houseType, hasLand,
     // Champs pour utilisateurs non connectés
-    clientFirstName, clientLastName, clientEmail, clientPhone
+    clientFirstName, clientLastName, clientEmail, clientPhone, clientPassword
   } = req.body;
 
   const errors = [];
@@ -119,6 +119,14 @@ const validateProjectCreation = (req, res, next) => {
       errors.push('Le téléphone du client est obligatoire');
     } else if (!/^(\+33|0)[1-9](\d{8})$/.test(clientPhone.replace(/\s/g, ''))) {
       errors.push('Le numéro de téléphone doit être un numéro français valide');
+    }
+
+    if (!clientPassword || clientPassword.length === 0) {
+      errors.push('Le mot de passe est obligatoire');
+    } else if (clientPassword.length < 8) {
+      errors.push('Le mot de passe doit contenir au moins 8 caractères');
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(clientPassword)) {
+      errors.push('Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre');
     }
   }
 

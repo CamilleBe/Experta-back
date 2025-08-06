@@ -3,6 +3,7 @@
 // ================================================
 
 const { Projet, User, Mission } = require('../models');
+const bcrypt = require('bcryptjs');
 
 const getAllProjets = async (req, res) => {
   try {
@@ -130,7 +131,7 @@ const createProjet = async (req, res) => {
       description, address, city, postalCode, 
       budget, surfaceM2, bedrooms, houseType, hasLand,
       // Champs pour utilisateurs non connectés
-      clientFirstName, clientLastName, clientEmail, clientPhone
+      clientFirstName, clientLastName, clientEmail, clientPhone, clientPassword
     } = req.body;
     
     let clientId;
@@ -167,14 +168,17 @@ const createProjet = async (req, res) => {
         console.log(`👤 Utilisateur existant trouvé: ${existingUser.email}`);
         
       } else {
-        // Créer un nouveau compte client
+        // Créer un nouveau compte client avec mot de passe hashé
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(clientPassword, salt);
+        
         const newUser = await User.create({
           firstName: clientFirstName,
           lastName: clientLastName,
           email: clientEmail,
           telephone: clientPhone,
           role: 'client',
-          password: null, // Pas de mot de passe - devra en créer un pour se connecter
+          password: hashedPassword,
           isActive: true
         });
         
@@ -219,7 +223,7 @@ const createProjet = async (req, res) => {
       data: projetWithRelations,
       message: 'Projet créé avec succès',
       userCreated: isNewUser, // Indique si un nouveau compte utilisateur a été créé
-      needsPasswordSetup: isNewUser // Pour indiquer au frontend qu'il faut configurer un mot de passe
+      accountReady: isNewUser // Indique que le compte est prêt à être utilisé (mot de passe déjà configuré)
     });
     
   } catch (error) {
