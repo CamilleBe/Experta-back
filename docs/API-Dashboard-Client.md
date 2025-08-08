@@ -70,15 +70,7 @@ const dashboard = await response.json();
           "lastName": "Martin",
           "email": "marie.martin@experta.fr",
           "telephone": "0234567890"
-        },
-        "missions": [
-          {
-            "id": 1,
-            "titre": "Étude de faisabilité",
-            "statut": "en_cours",
-            "createdAt": "2024-01-16T09:00:00.000Z"
-          }
-        ]
+        }
       }
     ],
     "statistiques": {

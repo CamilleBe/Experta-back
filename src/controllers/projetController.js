@@ -529,7 +529,7 @@ const getMyProjets = async (req, res) => {
       });
     }
     
-    // Récupérer tous les projets du client avec statistiques
+    // Récupérer tous les projets du client (sans les missions pour le dashboard)
     const projets = await Projet.findByClientId(clientId, {
       include: [
         {
@@ -537,13 +537,6 @@ const getMyProjets = async (req, res) => {
           as: 'amo',
           attributes: ['id', 'firstName', 'lastName', 'email', 'telephone'],
           required: false
-        },
-        {
-          model: Mission,
-          as: 'missions',
-          where: { isActive: true },
-          required: false,
-          attributes: ['id', 'titre', 'statut', 'createdAt']
         }
       ]
     });
