@@ -7,10 +7,16 @@ const { initializeDatabase } = require('./models');
 
 const app = express();
 
-// Middlewares
+// Middlewares CORS - Configuration temporaire permissive pour debug
 const allowedOrigins = [
   'http://localhost:3000', // backend et potentiellement front en dev
   'http://localhost:5173', // front en développement (Vite)
+  'http://localhost:8080', // Vue CLI dev server
+  'http://localhost:4173', // Vite preview
+  'http://localhost:5174', // Vite alternative port
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8080',
 ];
 
 app.use(cors({
@@ -19,14 +25,25 @@ app.use(cors({
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.log(`❌ CORS - Origine refusée: ${origin}`);
+      callback(new Error(`CORS: Origine ${origin} non autorisée`));
     }
   },
-  credentials: true, // si tu utilises les cookies ou l'authentification
+  credentials: true,
   allowedHeaders: ['Authorization', 'X-Requested-With', 'Content-Type', 'Accept'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 200
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware de logging simple
+app.use((req, res, next) => {
+  if (req.method !== 'OPTIONS') {
+    console.log(`🌐 ${req.method} ${req.originalUrl}`);
+  }
+  next();
+});
 
 // ================================================
 // INITIALISATION DE LA BASE DE DONNÉES
@@ -76,12 +93,14 @@ app.get('/health', (req, res) => {
 // Import des routes
 const userRoutes = require('./routes/userRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const clientDocumentRoutes = require('./routes/clientDocumentRoutes');
 const projetRoutes = require('./routes/projetRoutes');
 const missionRoutes = require('./routes/missionRoutes');
 
 // Configuration des routes
 app.use('/api/users', userRoutes);
-app.use('/api/documents', documentRoutes);
+app.use('/api/documents', documentRoutes); // Routes documents métier (existantes)
+app.use('/api/client-documents', clientDocumentRoutes); // Routes documents clients (dashboard)
 app.use('/api/projets', projetRoutes);
 app.use('/api/missions', missionRoutes);
 

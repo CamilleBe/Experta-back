@@ -66,12 +66,10 @@ const Document = sequelize.define('Document', {
     validate: {
       notEmpty: {
         msg: 'Le lien du fichier ne peut pas être vide'
-      },
-      isUrl: {
-        msg: 'Le lien du fichier doit être une URL valide'
       }
+      // Suppression de la validation isUrl pour permettre les chemins locaux
     },
-    comment: 'URL ou chemin vers le fichier'
+    comment: 'URL ou chemin vers le fichier (local ou distant)'
   },
   
   tailleFichier: {
@@ -98,6 +96,38 @@ const Document = sequelize.define('Document', {
       }
     },
     comment: 'Extension du fichier (pdf, docx, xlsx, etc.)'
+  },
+
+  // ================================================
+  // NOUVEAUX CHAMPS POUR SUPPORT UPLOAD
+  // ================================================
+  
+  nomOriginal: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'nom_original',
+    comment: 'Nom original du fichier uploadé'
+  },
+  
+  nomFichier: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    field: 'nom_fichier',
+    comment: 'Nom du fichier sur le serveur'
+  },
+  
+  mimeType: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'mime_type',
+    comment: 'Type MIME du fichier'
+  },
+  
+  cheminFichier: {
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    field: 'chemin_fichier',
+    comment: 'Chemin relatif vers le fichier sur le serveur'
   },
   
   isActive: {
@@ -171,6 +201,31 @@ Document.prototype.getFormattedSize = function() {
   
   const i = Math.floor(Math.log(bytes) / Math.log(1024));
   return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+};
+
+// Obtenir le type de fichier lisible
+Document.prototype.getReadableFileType = function() {
+  if (this.mimeType) {
+    const mimeMap = {
+      'application/pdf': 'PDF',
+      'application/msword': 'Document Word',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'Document Word',
+      'image/jpeg': 'Image JPEG',
+      'image/png': 'Image PNG'
+    };
+    return mimeMap[this.mimeType] || 'Fichier';
+  }
+  
+  // Fallback sur le type métier
+  const typeMap = {
+    'contrat': 'Contrat',
+    'devis': 'Devis', 
+    'facture': 'Facture',
+    'rapport': 'Rapport',
+    'presentation': 'Présentation',
+    'autre': 'Autre'
+  };
+  return typeMap[this.type] || 'Document';
 };
 
 // ================================================

@@ -26,6 +26,8 @@ Document.belongsTo(User, {
   as: 'user'
 });
 
+
+
 // Associations User <-> Projet (en tant que client)
 User.hasMany(Projet, { 
   foreignKey: 'clientId', 
@@ -78,11 +80,36 @@ const initializeDatabase = async (force = false) => {
       throw new Error('Impossible de se connecter à la base de données');
     }
     
+    console.log('📋 Modèles chargés:', {
+      User: !!User,
+      Document: !!Document,
+      Projet: !!Projet,
+      Mission: !!Mission
+    });
+    
     // 2. Synchronisation des modèles
+    console.log(`🔄 Synchronisation avec force=${force}, alter=${!force}`);
     await syncDatabase({ 
       force, // true = recrée toutes les tables (⚠️ perte de données)
       alter: !force // true = met à jour la structure sans perdre les données
     });
+    
+    // 3. Vérifier que la table ClientDocument existe
+    console.log('🔍 Vérification table documents...');
+    try {
+      const tableExists = await sequelize.getQueryInterface().showAllTables();
+      console.log('📋 Tables existantes:', tableExists);
+      
+      if (tableExists.includes('documents')) {
+        console.log('✅ Table documents trouvée');
+        const tableStructure = await sequelize.getQueryInterface().describeTable('documents');
+        console.log('📋 Structure table documents:', Object.keys(tableStructure));
+      } else {
+        console.log('❌ Table documents NON trouvée !');
+      }
+    } catch (tableError) {
+      console.error('❌ Erreur vérification table:', tableError.message);
+    }
     
     // 3. Création de données par défaut si nécessaire
     if (force) {
