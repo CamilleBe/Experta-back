@@ -26,6 +26,18 @@ Document.belongsTo(User, {
   as: 'user'
 });
 
+// Associations Document <-> Projet
+Document.belongsTo(Projet, {
+  foreignKey: 'projetId',
+  as: 'projet'
+});
+
+Projet.hasMany(Document, {
+  foreignKey: 'projetId',
+  as: 'documents',
+  onDelete: 'CASCADE'
+});
+
 
 
 // Associations User <-> Projet (en tant que client)

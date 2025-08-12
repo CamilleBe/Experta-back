@@ -135,6 +135,39 @@ const Document = sequelize.define('Document', {
     defaultValue: true,
     field: 'is_active',
     comment: 'Indique si le document est actif'
+  },
+
+  // ================================================
+  // CHAMPS POUR GESTION AMO/CLIENT
+  // ================================================
+  
+  projetId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'projet_id',
+    references: {
+      model: 'projets',
+      key: 'id'
+    },
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE',
+    comment: 'Identifiant du projet associé'
+  },
+  
+  authorType: {
+    type: DataTypes.ENUM('client', 'AMO'),
+    allowNull: false,
+    defaultValue: 'client',
+    field: 'author_type',
+    comment: 'Type d\'auteur du document (client ou AMO)'
+  },
+  
+  visibilite: {
+    type: DataTypes.ENUM('prive', 'partage'),
+    allowNull: false,
+    defaultValue: 'prive',
+    field: 'visibilite',
+    comment: 'Visibilité du document (privé ou partagé avec l\'autre partie)'
   }
   
 }, {

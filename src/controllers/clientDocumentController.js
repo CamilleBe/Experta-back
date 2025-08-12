@@ -2,11 +2,67 @@
 // CONTRÔLEUR CLIENT DOCUMENTS POUR DASHBOARD CLIENT
 // ================================================
 
-const { Document, User } = require('../models');
+const { Document, User, Projet } = require('../models');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const fsSync = require('fs');
+const { Op } = require('sequelize');
+
+// ================================================
+// FONCTION UTILITAIRE POUR VÉRIFIER L'ACCÈS AUX DOCUMENTS
+// ================================================
+
+const checkDocumentAccess = async (user, document) => {
+  try {
+    console.log(`🔍 Vérification d'accès - Utilisateur: ${user.id} (${user.role}), Document: ${document.id} (propriétaire: ${document.userId})`);
+    
+    // L'utilisateur peut toujours accéder à ses propres documents
+    if (document.userId === user.id) {
+      console.log('✅ Accès accordé - Propriétaire du document');
+      return true;
+    }
+    
+    // Logique pour les accès croisés AMO/client via les projets
+    if (user.role === 'AMO') {
+      // Un AMO peut accéder aux documents d'un client s'ils travaillent ensemble sur un projet
+      const sharedProjects = await Projet.findAll({
+        where: {
+          amoId: user.id,
+          clientId: document.userId,
+          isActive: true
+        }
+      });
+      
+      if (sharedProjects.length > 0) {
+        console.log(`✅ Accès accordé - AMO ${user.id} travaille avec client ${document.userId} sur ${sharedProjects.length} projet(s)`);
+        return true;
+      }
+    }
+    
+    if (user.role === 'client') {
+      // Un client peut accéder aux documents d'un AMO s'ils travaillent ensemble sur un projet
+      const sharedProjects = await Projet.findAll({
+        where: {
+          clientId: user.id,
+          amoId: document.userId,
+          isActive: true
+        }
+      });
+      
+      if (sharedProjects.length > 0) {
+        console.log(`✅ Accès accordé - Client ${user.id} travaille avec AMO ${document.userId} sur ${sharedProjects.length} projet(s)`);
+        return true;
+      }
+    }
+    
+    console.log('❌ Accès refusé - Pas de relation de travail trouvée');
+    return false;
+  } catch (error) {
+    console.error('❌ Erreur checkDocumentAccess:', error.message);
+    return false;
+  }
+};
 
 // ================================================
 // CONFIGURATION MULTER POUR UPLOAD DE FICHIERS
@@ -22,16 +78,17 @@ if (!fsSync.existsSync(uploadsDir)) {
 // Configuration du stockage multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    // Créer un dossier par client pour organiser les fichiers
-    const clientId = req.user.id;
-    const clientDir = path.join(uploadsDir, `client_${clientId}`);
+    // Créer un dossier par utilisateur pour organiser les fichiers
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const userDir = path.join(uploadsDir, `${userRole}_${userId}`);
     
-    // Créer le dossier client s'il n'existe pas
-    if (!fsSync.existsSync(clientDir)) {
-      fsSync.mkdirSync(clientDir, { recursive: true });
+    // Créer le dossier utilisateur s'il n'existe pas
+    if (!fsSync.existsSync(userDir)) {
+      fsSync.mkdirSync(userDir, { recursive: true });
     }
     
-    cb(null, clientDir);
+    cb(null, userDir);
   },
   filename: function (req, file, cb) {
     // Générer un nom de fichier unique avec timestamp
@@ -78,12 +135,12 @@ const uploadDocuments = async (req, res) => {
   try {
     console.log(`📤 Upload documents - Client ID: ${req.user.id}`);
     
-    // Vérifier que l'utilisateur est bien un client
-    if (req.user.role !== 'client') {
+    // Vérifier que l'utilisateur est un client ou un AMO
+    if (!['client', 'AMO'].includes(req.user.role)) {
       console.log(`❌ Accès refusé - rôle: ${req.user.role}`);
       return res.status(403).json({
         success: false,
-        message: 'Accès refusé - Seuls les clients peuvent uploader des documents'
+        message: 'Accès refusé - Seuls les clients et AMO peuvent uploader des documents'
       });
     }
 
@@ -132,6 +189,10 @@ const uploadDocuments = async (req, res) => {
       try {
         const uploadedDocuments = [];
         
+        // Récupérer les paramètres additionnels
+        const projetId = req.body.projetId ? parseInt(req.body.projetId) : null;
+        const visibilite = req.body.visibilite || 'partage'; // Par défaut partagé pour AMO/client
+        
         // Traiter chaque fichier uploadé
         for (const file of req.files) {
           const relativePath = path.relative(path.join(__dirname, '../..'), file.path);
@@ -139,14 +200,17 @@ const uploadDocuments = async (req, res) => {
           const documentData = {
             userId: req.user.id,
             nom: file.originalname,
-            type: 'autre',
+            type: req.body.type || 'autre',
             lienFichier: relativePath,
             tailleFichier: file.size,
             formatFichier: path.extname(file.originalname).toLowerCase().replace('.', ''),
             nomOriginal: file.originalname,
             nomFichier: file.filename,
             mimeType: file.mimetype,
-            cheminFichier: relativePath
+            cheminFichier: relativePath,
+            projetId: projetId,
+            authorType: req.user.role,
+            visibilite: visibilite
           };
           
           console.log(`📋 Données pour ${file.originalname}:`, {
@@ -213,14 +277,15 @@ const uploadDocuments = async (req, res) => {
 
 const getClientDocuments = async (req, res) => {
   try {
-    const clientId = req.user.id;
-    console.log(`📋 GET documents - Client ID: ${clientId}`);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    console.log(`📋 GET documents - User ID: ${userId}, Role: ${userRole}`);
     
-    // Vérifier que l'utilisateur est bien un client
-    if (req.user.role !== 'client') {
+    // Vérifier que l'utilisateur est un client ou un AMO
+    if (!['client', 'AMO'].includes(userRole)) {
       return res.status(403).json({
         success: false,
-        message: 'Accès refusé - Seuls les clients peuvent accéder à leurs documents'
+        message: 'Accès refusé - Seuls les clients et AMO peuvent accéder aux documents'
       });
     }
     
@@ -229,17 +294,70 @@ const getClientDocuments = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const offset = (page - 1) * limit;
     
-    // Filtres optionnels
-    const where = { 
-      userId: clientId,
-      isActive: true 
-    };
+    // Construire les conditions de récupération selon le rôle
+    let whereConditions;
     
+    if (userRole === 'client') {
+      // Un client voit :
+      // 1. Ses propres documents
+      // 2. Les documents partagés des AMO sur ses projets
+      
+      // Récupérer les projets du client
+      const clientProjects = await Projet.findAll({
+        where: { clientId: userId },
+        attributes: ['id']
+      });
+      
+      const projectIds = clientProjects.map(p => p.id);
+      
+      whereConditions = {
+        [Op.or]: [
+          // Ses propres documents
+          { userId: userId, isActive: true },
+          // Documents partagés des AMO sur ses projets
+          {
+            projetId: { [Op.in]: projectIds },
+            authorType: 'AMO',
+            visibilite: 'partage',
+            isActive: true
+          }
+        ]
+      };
+      
+    } else if (userRole === 'AMO') {
+      // Un AMO voit :
+      // 1. Ses propres documents
+      // 2. Les documents partagés des clients sur les projets qu'il gère
+      
+      // Récupérer les projets gérés par l'AMO
+      const amoProjects = await Projet.findAll({
+        where: { amoId: userId },
+        attributes: ['id']
+      });
+      
+      const projectIds = amoProjects.map(p => p.id);
+      
+      whereConditions = {
+        [Op.or]: [
+          // Ses propres documents
+          { userId: userId, isActive: true },
+          // Documents partagés des clients sur ses projets
+          {
+            projetId: { [Op.in]: projectIds },
+            authorType: 'client',
+            visibilite: 'partage',
+            isActive: true
+          }
+        ]
+      };
+    }
+    
+    // Filtres additionnels optionnels
     if (req.query.mimeType) {
-      where.mimeType = req.query.mimeType;
+      whereConditions.mimeType = req.query.mimeType;
     }
     const { count, rows: documents } = await Document.findAndCountAll({
-      where,
+      where: whereConditions,
       limit,
       offset,
       order: [['createdAt', 'DESC']], // Utiliser createdAt au lieu de uploadDate
@@ -259,20 +377,16 @@ const getClientDocuments = async (req, res) => {
       byType: {}
     };
     
-    // Calculer la taille totale manuellement
-    const sizeResult = await Document.findAll({
-      where: { userId: clientId, isActive: true },
-      attributes: ['tailleFichier']
+    // Calculer les statistiques sur tous les documents accessibles
+    const allAccessibleDocuments = await Document.findAll({
+      where: whereConditions,
+      attributes: ['tailleFichier', 'type', 'mimeType']
     });
-    stats.totalSize = sizeResult.reduce((sum, doc) => sum + (doc.tailleFichier || 0), 0);
+    
+    stats.totalSize = allAccessibleDocuments.reduce((sum, doc) => sum + (doc.tailleFichier || 0), 0);
     
     // Compter par type
-    const allDocuments = await Document.findAll({
-      where: { userId: clientId, isActive: true },
-      attributes: ['type', 'mimeType']
-    });
-    
-    allDocuments.forEach(doc => {
+    allAccessibleDocuments.forEach(doc => {
       const type = doc.getReadableFileType();
       stats.byType[type] = (stats.byType[type] || 0) + 1;
     });
@@ -310,8 +424,8 @@ const getClientDocuments = async (req, res) => {
 const downloadDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const clientId = req.user.id;
-    console.log(`📥 Téléchargement du document ID: ${id} par le client ID: ${clientId}`);
+    const userId = req.user.id;
+    console.log(`📥 Téléchargement du document ID: ${id} par l'utilisateur ID: ${userId}`);
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -330,11 +444,12 @@ const downloadDocument = async (req, res) => {
       });
     }
     
-    // Vérifier que le document appartient au client connecté (sécurité)
-    if (document.userId !== clientId) {
+    // Vérifier les permissions d'accès selon le rôle
+    const canAccess = await checkDocumentAccess(req.user, document);
+    if (!canAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Accès refusé - Ce document ne vous appartient pas'
+        message: 'Accès refusé - Vous n\'avez pas les permissions pour accéder à ce document'
       });
     }
     
@@ -390,8 +505,8 @@ const downloadDocument = async (req, res) => {
 const deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const clientId = req.user.id;
-    console.log(`🗑️ Suppression du document ID: ${id} par le client ID: ${clientId}`);
+    const userId = req.user.id;
+    console.log(`🗑️ Suppression du document ID: ${id} par l'utilisateur ID: ${userId}`);
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -410,11 +525,12 @@ const deleteDocument = async (req, res) => {
       });
     }
     
-    // Vérifier que le document appartient au client connecté (sécurité)
-    if (document.userId !== clientId) {
+    // Vérifier les permissions d'accès selon le rôle
+    const canAccess = await checkDocumentAccess(req.user, document);
+    if (!canAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Accès refusé - Ce document ne vous appartient pas'
+        message: 'Accès refusé - Vous n\'avez pas les permissions pour accéder à ce document'
       });
     }
     
@@ -456,8 +572,8 @@ const deleteDocument = async (req, res) => {
 const getDocumentById = async (req, res) => {
   try {
     const { id } = req.params;
-    const clientId = req.user.id;
-    console.log(`🔍 Récupération du document ID: ${id} par le client ID: ${clientId}`);
+    const userId = req.user.id;
+    console.log(`🔍 Récupération du document ID: ${id} par l'utilisateur ID: ${userId}`);
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -482,11 +598,12 @@ const getDocumentById = async (req, res) => {
       });
     }
     
-    // Vérifier que le document appartient au client connecté (sécurité)
-    if (document.userId !== clientId) {
+    // Vérifier les permissions d'accès selon le rôle
+    const canAccess = await checkDocumentAccess(req.user, document);
+    if (!canAccess) {
       return res.status(403).json({
         success: false,
-        message: 'Accès refusé - Ce document ne vous appartient pas'
+        message: 'Accès refusé - Vous n\'avez pas les permissions pour accéder à ce document'
       });
     }
     

@@ -7,9 +7,9 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // ROUTES DOCUMENTS POUR DASHBOARD CLIENT
 // ================================================
 
-// Toutes les routes nécessitent une authentification et le rôle client
+// Toutes les routes nécessitent une authentification
 // Le middleware authenticateToken vérifie le JWT
-// Le middleware authorizeRole(['client']) vérifie que l'utilisateur est un client
+// Certaines routes permettent l'accès aux AMO pour le partage de documents
 
 // ================================================
 // ENDPOINT: POST /api/documents/upload
@@ -18,7 +18,7 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // ================================================
 router.post('/upload', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRole(['client', 'AMO']), 
   clientDocumentController.uploadDocuments
 );
 
@@ -29,44 +29,45 @@ router.post('/upload',
 // ================================================
 router.get('/', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRole(['client', 'AMO']), 
   clientDocumentController.getClientDocuments
 );
 
 // ================================================
 // ENDPOINT: GET /api/documents/:id/download
 // Description: Téléchargement d'un fichier
-// Sécurité: Le client ne peut télécharger que ses propres documents
+// Sécurité: Accès contrôlé par la fonction checkDocumentAccess
 // ================================================
 router.get('/:id/download', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRole(['client', 'AMO']), 
   clientDocumentController.downloadDocument
 );
 
 // ================================================
 // ENDPOINT: GET /api/documents/:id
 // Description: Obtenir les détails d'un document spécifique
-// Sécurité: Le client ne peut voir que ses propres documents
+// Sécurité: Accès contrôlé par la fonction checkDocumentAccess
 // ================================================
 router.get('/:id', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRole(['client', 'AMO']), 
   clientDocumentController.getDocumentById
 );
 
 // ================================================
 // ENDPOINT: DELETE /api/documents/:id
 // Description: Suppression d'un document (soft delete)
-// Sécurité: Le client ne peut supprimer que ses propres documents
+// Sécurité: Accès contrôlé par la fonction checkDocumentAccess
 // ================================================
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRole(['client', 'AMO']), 
   clientDocumentController.deleteDocument
 );
 
 module.exports = router;
+
 
 
 

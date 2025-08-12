@@ -456,3 +456,4 @@ export const documentService = {
 ✅ **Validation complète** - Types, tailles, permissions  
 ✅ **Logs optimisés** - Messages clairs et concis
 
+
