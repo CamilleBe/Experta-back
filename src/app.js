@@ -96,6 +96,8 @@ const documentRoutes = require('./routes/documentRoutes');
 const clientDocumentRoutes = require('./routes/clientDocumentRoutes');
 const projetRoutes = require('./routes/projetRoutes');
 const missionRoutes = require('./routes/missionRoutes');
+const amoRoutes = require('./routes/amoRoutes');
+const partenaireRoutes = require('./routes/partenaireRoutes');
 
 // Configuration des routes
 app.use('/api/users', userRoutes);
@@ -103,6 +105,8 @@ app.use('/api/documents', documentRoutes); // Routes documents métier (existant
 app.use('/api/client-documents', clientDocumentRoutes); // Routes documents clients (dashboard)
 app.use('/api/projets', projetRoutes);
 app.use('/api/missions', missionRoutes);
+app.use('/api/amo', amoRoutes); // Routes dashboard AMO
+app.use('/api/partenaire', partenaireRoutes); // Routes dashboard partenaire
 
 // Middleware de gestion d'erreur global
 app.use((err, req, res, next) => {

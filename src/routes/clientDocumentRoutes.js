@@ -18,7 +18,7 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // ================================================
 router.post('/upload', 
   authenticateToken, 
-  authorizeRole(['client', 'AMO']), 
+  authorizeRole(['client']), 
   clientDocumentController.uploadDocuments
 );
 
@@ -29,7 +29,7 @@ router.post('/upload',
 // ================================================
 router.get('/', 
   authenticateToken, 
-  authorizeRole(['client', 'AMO']), 
+  authorizeRole(['client']), 
   clientDocumentController.getClientDocuments
 );
 
@@ -62,8 +62,36 @@ router.get('/:id',
 // ================================================
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRole(['client', 'AMO']), 
+  authorizeRole(['client']), 
   clientDocumentController.deleteDocument
+);
+
+// ================================================
+// ROUTES POUR ACCÉDER AUX DOCUMENTS AMO (depuis dashboard client)
+// ================================================
+
+// Import du contrôleur de documents génériques
+const documentController = require('../controllers/documentController');
+
+// Télécharger les documents de l'AMO (pour client)
+router.get('/amo/:id/download', 
+  authenticateToken, 
+  authorizeRole(['client']), 
+  documentController.downloadDocument
+);
+
+// Voir les documents de l'AMO (pour client)
+router.get('/amo/:id', 
+  authenticateToken, 
+  authorizeRole(['client']), 
+  documentController.getDocumentById
+);
+
+// Lister les documents AMO (pour client)
+router.get('/amo', 
+  authenticateToken, 
+  authorizeRole(['client']), 
+  documentController.getDocumentsByUser
 );
 
 module.exports = router;

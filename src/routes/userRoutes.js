@@ -3,8 +3,8 @@ const router = express.Router();
 const userController = require('../controllers/userController');
 const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
 
-// Route pour obtenir tous les utilisateurs (authentification requise)
-router.get('/', authenticateToken, userController.getAllUsers);
+// Route pour obtenir tous les utilisateurs (admin seulement)
+router.get('/', authenticateToken, authorizeRole(['admin']), userController.getAllUsers);
 
 // Route pour créer un nouvel utilisateur (publique pour l'inscription client)
 router.post('/', userController.createUser);
@@ -18,10 +18,10 @@ router.post('/register-partner', userController.registerPartner);
 // Route pour la connexion (publique)
 router.post('/login', userController.loginUser);
 
-// Route pour obtenir un utilisateur par ID (authentification requise)
+// Route pour obtenir un utilisateur par ID (propriétaire ou admin)
 router.get('/:id', authenticateToken, userController.getUserById);
 
-// Route pour mettre à jour un utilisateur (authentification requise)
+// Route pour mettre à jour un utilisateur (propriétaire ou admin)
 router.put('/:id', authenticateToken, userController.updateUser);
 
 // Route pour supprimer un utilisateur (admin seulement)
@@ -33,8 +33,8 @@ router.get('/professionals/zone/:zone', userController.getProfessionalsByZone);
 router.get('/professionals/top', userController.getTopProfessionals);
 router.get('/professionals/stats/popular-tags', userController.getPopularTagsMetiers);
 
-// Routes pour la gestion des tags métiers (authentification requise)
-router.post('/:id/tags-metiers', authenticateToken, userController.addTagMetierToUser);
-router.delete('/:id/tags-metiers', authenticateToken, userController.removeTagMetierFromUser);
+// Routes pour la gestion des tags métiers (AMO et partenaire seulement)
+router.post('/:id/tags-metiers', authenticateToken, authorizeRole(['AMO', 'partenaire', 'admin']), userController.addTagMetierToUser);
+router.delete('/:id/tags-metiers', authenticateToken, authorizeRole(['AMO', 'partenaire', 'admin']), userController.removeTagMetierFromUser);
 
 module.exports = router; 
