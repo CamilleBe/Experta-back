@@ -34,6 +34,35 @@ router.get('/',
 );
 
 // ================================================
+// ROUTES POUR ACCÉDER AUX DOCUMENTS AMO (depuis dashboard client)
+// CES ROUTES DOIVENT ÊTRE AVANT LES ROUTES AVEC PARAMÈTRES /:id
+// ================================================
+
+// Import du contrôleur de documents génériques
+const documentController = require('../controllers/documentController');
+
+// Lister les documents AMO (pour client) - DOIT ÊTRE AVANT /:id
+router.get('/amo', 
+  authenticateToken, 
+  authorizeRoleHidden(['client']), 
+  clientDocumentController.getAmoDocuments
+);
+
+// Télécharger les documents de l'AMO (pour client)
+router.get('/amo/:id/download', 
+  authenticateToken, 
+  authorizeRoleHidden(['client']), 
+  clientDocumentController.downloadDocument
+);
+
+// Voir les documents de l'AMO (pour client)
+router.get('/amo/:id', 
+  authenticateToken, 
+  authorizeRoleHidden(['client']), 
+  clientDocumentController.getDocumentById
+);
+
+// ================================================
 // ENDPOINT: GET /api/documents/:id/download
 // Description: Téléchargement d'un fichier
 // Sécurité: Accès contrôlé par la fonction checkDocumentAccess
@@ -64,34 +93,6 @@ router.delete('/:id',
   authenticateToken, 
   authorizeRoleHidden(['client']), 
   clientDocumentController.deleteDocument
-);
-
-// ================================================
-// ROUTES POUR ACCÉDER AUX DOCUMENTS AMO (depuis dashboard client)
-// ================================================
-
-// Import du contrôleur de documents génériques
-const documentController = require('../controllers/documentController');
-
-// Télécharger les documents de l'AMO (pour client)
-router.get('/amo/:id/download', 
-  authenticateToken, 
-  authorizeRoleHidden(['client']), 
-  clientDocumentController.downloadDocument
-);
-
-// Voir les documents de l'AMO (pour client)
-router.get('/amo/:id', 
-  authenticateToken, 
-  authorizeRoleHidden(['client']), 
-  clientDocumentController.getDocumentById
-);
-
-// Lister les documents AMO (pour client)
-router.get('/amo', 
-  authenticateToken, 
-  authorizeRoleHidden(['client']), 
-  clientDocumentController.getClientDocuments
 );
 
 module.exports = router;

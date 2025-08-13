@@ -623,10 +623,80 @@ const getDocumentById = async (req, res) => {
   }
 };
 
+// ================================================
+// RÉCUPÉRER LES DOCUMENTS AMO POUR UN CLIENT
+// ================================================
+
+const getAmoDocuments = async (req, res) => {
+  try {
+    console.log(`📋 Récupération des documents AMO pour le client ${req.user.id}...`);
+    
+    // Récupérer les projets du client qui ont un AMO assigné
+    const clientProjects = await Projet.findAll({
+      where: { 
+        clientId: req.user.id,
+        amoId: { [Op.not]: null } // Seulement les projets avec AMO
+      },
+      include: [
+        {
+          model: User,
+          as: 'amo',
+          attributes: ['id', 'firstName', 'lastName', 'nomEntreprise']
+        }
+      ]
+    });
+
+    if (clientProjects.length === 0) {
+      console.log('ℹ️ Aucun projet avec AMO trouvé pour ce client');
+      return res.json({
+        success: true,
+        data: [],
+        message: 'Aucun document AMO disponible - aucun projet avec AMO assigné'
+      });
+    }
+
+    // Récupérer les IDs des AMO
+    const amoIds = clientProjects.map(project => project.amoId);
+    
+    // Récupérer les documents des AMO
+    const amoDocuments = await Document.findAll({
+      where: {
+        userId: { [Op.in]: amoIds },
+        isActive: true
+      },
+      include: [
+        {
+          model: User,
+          as: 'user',
+          attributes: ['id', 'firstName', 'lastName', 'nomEntreprise']
+        }
+      ],
+      order: [['createdAt', 'DESC']]
+    });
+
+    console.log(`✅ ${amoDocuments.length} documents AMO trouvés`);
+
+    res.json({
+      success: true,
+      data: amoDocuments,
+      message: `${amoDocuments.length} documents AMO trouvés`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getAmoDocuments:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des documents AMO',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   uploadDocuments,
   getClientDocuments,
   downloadDocument,
   deleteDocument,
-  getDocumentById
+  getDocumentById,
+  getAmoDocuments
 };
