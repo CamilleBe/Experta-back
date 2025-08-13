@@ -110,14 +110,14 @@ router.get('/documents/client',
 router.get('/documents/partenaire/:id/download', 
   authenticateToken, 
   authorizeRoleHidden(['AMO']), 
-  documentController.downloadDocument
+  clientDocumentController.downloadDocument
 );
 
 // Upload de documents AMO
 router.post('/documents/upload', 
   authenticateToken, 
   authorizeRoleHidden(['AMO']), 
-  documentController.uploadDocuments
+  clientDocumentController.uploadDocuments
 );
 
 module.exports = router;

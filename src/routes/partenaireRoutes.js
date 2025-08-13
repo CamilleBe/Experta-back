@@ -83,33 +83,34 @@ router.get('/profil',
 
 // Import du contrôleur de documents
 const documentController = require('../controllers/documentController');
+const clientDocumentController = require('../controllers/clientDocumentController');
 
 // Télécharger les documents de l'AMO (pour partenaire)
 router.get('/documents/amo/:id/download', 
   authenticateToken, 
   authorizeRoleHidden(['partenaire']), 
-  documentController.downloadDocument
+  clientDocumentController.downloadDocument
 );
 
 // Voir les documents de l'AMO (pour partenaire)
 router.get('/documents/amo/:id', 
   authenticateToken, 
   authorizeRoleHidden(['partenaire']), 
-  documentController.getDocumentById
+  clientDocumentController.getDocumentById
 );
 
 // Lister les documents AMO (pour partenaire)
 router.get('/documents/amo', 
   authenticateToken, 
   authorizeRoleHidden(['partenaire']), 
-  documentController.getDocumentsByUser
+  clientDocumentController.getClientDocuments
 );
 
 // Upload de documents partenaire
 router.post('/documents/upload', 
   authenticateToken, 
   authorizeRoleHidden(['partenaire']), 
-  documentController.uploadDocuments
+  clientDocumentController.uploadDocuments
 );
 
 module.exports = router;

@@ -14,6 +14,8 @@ const allowedOrigins = [
   'http://localhost:8080', // Vue CLI dev server
   'http://localhost:4173', // Vite preview
   'http://localhost:5174', // Vite alternative port
+  'http://localhost:3001', // front alternatif
+  'http://localhost:5175', // front alternatif
   'http://127.0.0.1:3000',
   'http://127.0.0.1:5173',
   'http://127.0.0.1:8080',

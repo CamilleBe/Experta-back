@@ -98,13 +98,15 @@ const authorizeClientOrAnonymous = (req, res, next) => {
 
 const authorizeRoleHidden = (roles) => {
   return (req, res, next) => {
+    // Si pas d'utilisateur connecté, retourner 401 (non authentifié)
     if (!req.user) {
-      return res.status(404).json({
+      return res.status(401).json({
         success: false,
-        message: 'Page non trouvée'
+        message: 'Token d\'accès requis'
       });
     }
 
+    // Si utilisateur connecté mais mauvais rôle, retourner 404 (page non trouvée)
     if (!roles.includes(req.user.role)) {
       return res.status(404).json({
         success: false,

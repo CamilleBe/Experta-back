@@ -77,21 +77,21 @@ const documentController = require('../controllers/documentController');
 router.get('/amo/:id/download', 
   authenticateToken, 
   authorizeRoleHidden(['client']), 
-  documentController.downloadDocument
+  clientDocumentController.downloadDocument
 );
 
 // Voir les documents de l'AMO (pour client)
 router.get('/amo/:id', 
   authenticateToken, 
   authorizeRoleHidden(['client']), 
-  documentController.getDocumentById
+  clientDocumentController.getDocumentById
 );
 
 // Lister les documents AMO (pour client)
 router.get('/amo', 
   authenticateToken, 
   authorizeRoleHidden(['client']), 
-  documentController.getDocumentsByUser
+  clientDocumentController.getClientDocuments
 );
 
 module.exports = router;
