@@ -18,7 +18,7 @@ const { authenticateToken, authorizeRole, authorizeRoleHidden } = require('../mi
 // ================================================
 router.post('/upload', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.uploadDocuments
 );
 
@@ -29,7 +29,7 @@ router.post('/upload',
 // ================================================
 router.get('/', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.getClientDocuments
 );
 
@@ -44,21 +44,21 @@ const documentController = require('../controllers/documentController');
 // Lister les documents AMO (pour client) - DOIT ÊTRE AVANT /:id
 router.get('/amo', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.getAmoDocuments
 );
 
 // Télécharger les documents de l'AMO (pour client)
 router.get('/amo/:id/download', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.downloadDocument
 );
 
 // Voir les documents de l'AMO (pour client)
 router.get('/amo/:id', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.getDocumentById
 );
 
@@ -69,7 +69,7 @@ router.get('/amo/:id',
 // ================================================
 router.get('/:id/download', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT', 'AMO']), 
+  authorizeRoleHidden(['client', 'amo']), 
   clientDocumentController.downloadDocument
 );
 
@@ -80,7 +80,7 @@ router.get('/:id/download',
 // ================================================
 router.get('/:id', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT', 'AMO']), 
+  authorizeRoleHidden(['client', 'amo']), 
   clientDocumentController.getDocumentById
 );
 
@@ -91,7 +91,7 @@ router.get('/:id',
 // ================================================
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRoleHidden(['CLIENT']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.deleteDocument
 );
 

@@ -12,7 +12,7 @@ const { authenticateToken, authorizeRole, authorizeRoleHidden } = require('../mi
 // Dashboard AMO - vue d'ensemble
 router.get('/dashboard', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   (req, res) => {
     // Contrôleur à implémenter pour le dashboard AMO
     res.json({
@@ -29,7 +29,7 @@ router.get('/dashboard',
 // Mes projets AMO
 router.get('/mes-projets', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   (req, res) => {
     // Contrôleur à implémenter pour les projets de l'AMO
     res.json({
@@ -46,7 +46,7 @@ router.get('/mes-projets',
 // Gestion des missions (AMO)
 router.get('/gestion-missions', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   (req, res) => {
     // Contrôleur à implémenter pour la gestion des missions
     res.json({
@@ -63,7 +63,7 @@ router.get('/gestion-missions',
 // Profil AMO
 router.get('/profil', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   (req, res) => {
     // Contrôleur à implémenter pour le profil AMO
     res.json({
@@ -88,35 +88,35 @@ const documentController = require('../controllers/documentController');
 // Télécharger les documents des clients (pour AMO)
 router.get('/documents/client/:id/download', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   clientDocumentController.downloadDocument
 );
 
 // Voir les documents des clients (pour AMO)
 router.get('/documents/client/:id', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   clientDocumentController.getDocumentById
 );
 
 // Lister les documents d'un client (pour AMO)
 router.get('/documents/client', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   clientDocumentController.getClientDocuments
 );
 
 // Télécharger les documents partenaires (pour AMO)
 router.get('/documents/partenaire/:id/download', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   clientDocumentController.downloadDocument
 );
 
 // Upload de documents AMO
 router.post('/documents/upload', 
   authenticateToken, 
-  authorizeRoleHidden(['AMO']), 
+  authorizeRoleHidden(['amo']), 
   clientDocumentController.uploadDocuments
 );
 

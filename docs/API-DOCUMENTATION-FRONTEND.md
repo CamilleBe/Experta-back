@@ -225,23 +225,23 @@ FormData:
 
 ### 🏢 Dashboard AMO (`/api/amo`) 🆕
 
-**Toutes les routes utilisent `authorizeRoleHidden(['AMO'])` - retournent 404 si pas AMO**
+**Toutes les routes utilisent `authorizeRoleHidden(['amo'])` - retournent 404 si pas amo**
 
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| `GET` | `/dashboard` | ✅ (AMO) | Vue d'ensemble dashboard AMO |
-| `GET` | `/mes-projets` | ✅ (AMO) | Projets de l'AMO connecté |
-| `GET` | `/gestion-missions` | ✅ (AMO) | Gestion des missions |
-| `GET` | `/profil` | ✅ (AMO) | Profil AMO |
+| `GET` | `/dashboard` | ✅ (amo) | Vue d'ensemble dashboard AMO |
+| `GET` | `/mes-projets` | ✅ (amo) | Projets de l'AMO connecté |
+| `GET` | `/gestion-missions` | ✅ (amo) | Gestion des missions |
+| `GET` | `/profil` | ✅ (amo) | Profil AMO |
 
 #### Documents pour AMO
 | Méthode | Route | Auth | Description |
 |---------|-------|------|-------------|
-| `POST` | `/documents/upload` | ✅ (AMO) | Upload documents AMO |
-| `GET` | `/documents/client` | ✅ (AMO) | Documents des clients |
-| `GET` | `/documents/client/:id` | ✅ (AMO) | Détails document client |
-| `GET` | `/documents/client/:id/download` | ✅ (AMO) | Télécharger document client |
-| `GET` | `/documents/partenaire/:id/download` | ✅ (AMO) | Télécharger document partenaire |
+| `POST` | `/documents/upload` | ✅ (amo) | Upload documents AMO |
+| `GET` | `/documents/client` | ✅ (amo) | Documents des clients |
+| `GET` | `/documents/client/:id` | ✅ (amo) | Détails document client |
+| `GET` | `/documents/client/:id/download` | ✅ (amo) | Télécharger document client |
+| `GET` | `/documents/partenaire/:id/download` | ✅ (amo) | Télécharger document partenaire |
 
 ### 🔧 Dashboard Partenaire (`/api/partenaire`) 🆕
 

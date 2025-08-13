@@ -82,7 +82,7 @@ const authorizeClientOrAnonymous = (req, res, next) => {
   }
 
   // Si utilisateur connecté, vérifier qu'il a le rôle client
-  if (req.user.role !== 'CLIENT') {
+  if (req.user.role !== 'client') {
     return res.status(403).json({
       success: false,
       message: 'Accès refusé - Seuls les clients peuvent créer des projets'
