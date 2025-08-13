@@ -92,9 +92,34 @@ const authorizeClientOrAnonymous = (req, res, next) => {
   next();
 };
 
+// ================================================
+// MIDDLEWARE POUR RETOURNER 404 AU LIEU DE 403 (SÉCURITÉ)
+// ================================================
+
+const authorizeRoleHidden = (roles) => {
+  return (req, res, next) => {
+    if (!req.user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page non trouvée'
+      });
+    }
+
+    if (!roles.includes(req.user.role)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Page non trouvée'
+      });
+    }
+
+    next();
+  };
+};
+
 module.exports = {
   authenticateToken,
   authorizeRole,
   optionalAuthenticateToken,
-  authorizeClientOrAnonymous
+  authorizeClientOrAnonymous,
+  authorizeRoleHidden
 }; 

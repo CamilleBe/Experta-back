@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
+const { authenticateToken, authorizeRole, authorizeRoleHidden } = require('../middlewares/authMiddleware');
 
 // ================================================
 // ROUTES DASHBOARD PARTENAIRE/ARTISAN
@@ -12,7 +12,7 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // Dashboard partenaire - vue d'ensemble
 router.get('/dashboard', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   (req, res) => {
     // Contrôleur à implémenter pour le dashboard partenaire
     res.json({
@@ -29,7 +29,7 @@ router.get('/dashboard',
 // Missions disponibles pour le partenaire
 router.get('/missions-disponibles', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   (req, res) => {
     // Contrôleur à implémenter pour lister les missions disponibles
     res.json({
@@ -46,7 +46,7 @@ router.get('/missions-disponibles',
 // Mes missions en cours (partenaire)
 router.get('/mes-missions', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   (req, res) => {
     // Contrôleur à implémenter pour les missions du partenaire
     res.json({
@@ -63,7 +63,7 @@ router.get('/mes-missions',
 // Profil partenaire
 router.get('/profil', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   (req, res) => {
     // Contrôleur à implémenter pour le profil partenaire
     res.json({
@@ -87,28 +87,28 @@ const documentController = require('../controllers/documentController');
 // Télécharger les documents de l'AMO (pour partenaire)
 router.get('/documents/amo/:id/download', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   documentController.downloadDocument
 );
 
 // Voir les documents de l'AMO (pour partenaire)
 router.get('/documents/amo/:id', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   documentController.getDocumentById
 );
 
 // Lister les documents AMO (pour partenaire)
 router.get('/documents/amo', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   documentController.getDocumentsByUser
 );
 
 // Upload de documents partenaire
 router.post('/documents/upload', 
   authenticateToken, 
-  authorizeRole(['partenaire']), 
+  authorizeRoleHidden(['partenaire']), 
   documentController.uploadDocuments
 );
 

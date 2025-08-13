@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const clientDocumentController = require('../controllers/clientDocumentController');
-const { authenticateToken, authorizeRole } = require('../middlewares/authMiddleware');
+const { authenticateToken, authorizeRole, authorizeRoleHidden } = require('../middlewares/authMiddleware');
 
 // ================================================
 // ROUTES DOCUMENTS POUR DASHBOARD CLIENT
@@ -18,7 +18,7 @@ const { authenticateToken, authorizeRole } = require('../middlewares/authMiddlew
 // ================================================
 router.post('/upload', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.uploadDocuments
 );
 
@@ -29,7 +29,7 @@ router.post('/upload',
 // ================================================
 router.get('/', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.getClientDocuments
 );
 
@@ -40,7 +40,7 @@ router.get('/',
 // ================================================
 router.get('/:id/download', 
   authenticateToken, 
-  authorizeRole(['client', 'AMO']), 
+  authorizeRoleHidden(['client', 'AMO']), 
   clientDocumentController.downloadDocument
 );
 
@@ -51,7 +51,7 @@ router.get('/:id/download',
 // ================================================
 router.get('/:id', 
   authenticateToken, 
-  authorizeRole(['client', 'AMO']), 
+  authorizeRoleHidden(['client', 'AMO']), 
   clientDocumentController.getDocumentById
 );
 
@@ -62,7 +62,7 @@ router.get('/:id',
 // ================================================
 router.delete('/:id', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   clientDocumentController.deleteDocument
 );
 
@@ -76,21 +76,21 @@ const documentController = require('../controllers/documentController');
 // Télécharger les documents de l'AMO (pour client)
 router.get('/amo/:id/download', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   documentController.downloadDocument
 );
 
 // Voir les documents de l'AMO (pour client)
 router.get('/amo/:id', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   documentController.getDocumentById
 );
 
 // Lister les documents AMO (pour client)
 router.get('/amo', 
   authenticateToken, 
-  authorizeRole(['client']), 
+  authorizeRoleHidden(['client']), 
   documentController.getDocumentsByUser
 );
 
