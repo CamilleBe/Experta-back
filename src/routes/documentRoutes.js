@@ -8,7 +8,7 @@ router.get('/', authenticateToken, documentController.getAllDocuments);
 router.get('/:id', authenticateToken, documentController.getDocumentById);
 router.post('/', authenticateToken, documentController.createDocument);
 router.put('/:id', authenticateToken, documentController.updateDocument);
-router.delete('/:id', authenticateToken, authorizeRole(['admin', 'AMO']), documentController.deleteDocument);
+router.delete('/:id', authenticateToken, authorizeRole(['ADMIN', 'AMO']), documentController.deleteDocument);
 
 // Routes spécialisées (authentification requise)
 router.get('/user/:userId', authenticateToken, documentController.getDocumentsByUser);
