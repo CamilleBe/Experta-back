@@ -218,6 +218,47 @@ const createProjet = async (req, res) => {
       ]
     });
     
+    // ================================================
+    // NOTIFICATION SIMPLE POUR LES AMO
+    // ================================================
+    
+    // Trouver les AMO dans la zone d'intervention du projet
+    try {
+      const amosInZone = await User.findAll({
+        where: {
+          role: 'AMO',
+          isActive: true,
+          zoneIntervention: {
+            [require('sequelize').Op.like]: `%${postalCode}%`
+          }
+        },
+        attributes: ['id', 'firstName', 'lastName', 'email', 'nomEntreprise']
+      });
+      
+      if (amosInZone.length > 0) {
+        console.log(`🔔 NOUVEAU PROJET DISPONIBLE pour ${amosInZone.length} AMO(s):`);
+        console.log(`   📍 Lieu: ${city} (${postalCode})`);
+        console.log(`   💰 Budget: ${budget ? budget + '€' : 'Non spécifié'}`);
+        console.log(`   🏠 Type: ${houseType || 'Non spécifié'}`);
+        console.log(`   📏 Surface: ${surfaceM2 ? surfaceM2 + 'm²' : 'Non spécifié'}`);
+        console.log(`   📧 Client: ${projetWithRelations.client.email}`);
+        console.log(`   🎯 AMO concernés:`);
+        
+        amosInZone.forEach(amo => {
+          console.log(`      - ${amo.firstName} ${amo.lastName} (${amo.nomEntreprise || amo.email})`);
+        });
+        
+        console.log(`   🔗 Projet ID: ${newProjet.id}`);
+        console.log(`   ⏰ Créé le: ${new Date().toLocaleString('fr-FR')}`);
+        console.log('   ────────────────────────────────────────────────────');
+      } else {
+        console.log(`📭 Nouveau projet créé (ID: ${newProjet.id}) - Aucun AMO trouvé dans la zone ${postalCode}`);
+      }
+    } catch (notificationError) {
+      console.error('❌ Erreur notification AMO:', notificationError.message);
+      // Ne pas faire échouer la création du projet pour autant
+    }
+
     res.status(201).json({
       success: true,
       data: projetWithRelations,
