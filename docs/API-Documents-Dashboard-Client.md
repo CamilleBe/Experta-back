@@ -448,12 +448,195 @@ export const documentService = {
 
 ---
 
+## 🔔 Système de notifications (Important pour le Frontend)
+
+### ⚠️ **Problème identifié : Notifications manquantes**
+
+**Le backend renvoie correctement les messages de succès**, mais le frontend ne les affiche pas. Voici comment corriger :
+
+### 📢 **Messages de succès du backend :**
+
+Toutes les réponses d'API incluent un champ `message` :
+
+```json
+{
+  "success": true,
+  "data": [...],
+  "message": "1 document(s) uploadé(s) avec succès"  // ← À AFFICHER
+}
+```
+
+### 🛠️ **Intégration frontend recommandée :**
+
+#### **Option 1 : Toast/Notification globale**
+```javascript
+// Dans votre service d'upload
+async function uploadDocuments(files) {
+  try {
+    const response = await api.post('/api/client-documents/upload', formData);
+    
+    if (response.data.success) {
+      // AFFICHER LA NOTIFICATION ICI 👇
+      showNotification('success', response.data.message);
+      // ou showToast(response.data.message, 'success');
+      // ou toast.success(response.data.message);
+    }
+    
+    return response.data;
+  } catch (error) {
+    showNotification('error', error.response?.data?.message || 'Erreur upload');
+    throw error;
+  }
+}
+```
+
+#### **Option 2 : Vue.js avec système de notifications**
+```vue
+<script>
+export default {
+  data() {
+    return {
+      notification: null,
+      uploading: false
+    }
+  },
+  methods: {
+    async uploadFiles() {
+      this.uploading = true;
+      
+      try {
+        const response = await documentService.upload(this.selectedFiles);
+        
+        // AFFICHER LE MESSAGE DE SUCCÈS 👇
+        this.showNotification({
+          type: 'success',
+          message: response.data.message, // "X document(s) uploadé(s) avec succès"
+          duration: 3000
+        });
+        
+        this.selectedFiles = [];
+        this.$emit('upload-success');
+        
+      } catch (error) {
+        this.showNotification({
+          type: 'error', 
+          message: error.response?.data?.message || 'Erreur upload',
+          duration: 5000
+        });
+      } finally {
+        this.uploading = false;
+      }
+    },
+    
+    showNotification(notification) {
+      this.notification = notification;
+      if (notification.duration) {
+        setTimeout(() => {
+          this.notification = null;
+        }, notification.duration);
+      }
+    }
+  }
+}
+</script>
+
+<template>
+  <!-- Composant de notification -->
+  <div 
+    v-if="notification" 
+    class="notification"
+    :class="notification.type"
+  >
+    {{ notification.message }}
+  </div>
+</template>
+```
+
+#### **Option 3 : Alert simple (temporaire)**
+```javascript
+async uploadFiles() {
+  try {
+    const response = await this.$api.post('/api/client-documents/upload', formData);
+    
+    if (response.data.success) {
+      // Solution rapide : alert() 👇
+      alert(response.data.message);
+      // OU console.log pour debug
+      console.log('✅', response.data.message);
+    }
+    
+  } catch (error) {
+    alert(error.response?.data?.message || 'Erreur upload');
+  }
+}
+```
+
+### 🎯 **Actions pour le développeur frontend :**
+
+1. **Vérifiez que vous récupérez `response.data.message`** dans vos appels API
+2. **Implémentez un système de notification** (toast, banner, modal)
+3. **Testez l'affichage** en ajoutant un `console.log(response.data.message)` temporaire
+4. **Gérez aussi les messages d'erreur** pour une meilleure UX
+
+### 📋 **Messages disponibles dans l'API :**
+
+| Action | Message de succès |
+|--------|------------------|
+| Upload | `"X document(s) uploadé(s) avec succès"` |
+| Liste | `"X document(s) récupéré(s) avec succès"` |
+| Détails | `"Document récupéré avec succès"` |
+| Suppression | `"Document supprimé avec succès"` |
+
+### ✅ **Exemple d'implémentation complète :**
+
+```javascript
+// service/documentService.js
+export const documentService = {
+  async upload(files) {
+    const formData = new FormData();
+    files.forEach(file => formData.append('documents', file));
+    
+    try {
+      const response = await api.post('/api/client-documents/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      // ✅ Afficher notification de succès
+      if (response.data.success && response.data.message) {
+        notificationStore.addNotification({
+          type: 'success',
+          title: 'Upload réussi',
+          message: response.data.message,
+          duration: 4000
+        });
+      }
+      
+      return response.data;
+      
+    } catch (error) {
+      // ❌ Afficher notification d'erreur
+      notificationStore.addNotification({
+        type: 'error',
+        title: 'Erreur d\'upload',
+        message: error.response?.data?.message || 'Erreur inconnue',
+        duration: 6000
+      });
+      
+      throw error;
+    }
+  }
+};
+```
+
+---
+
 ## 🚀 Statut
 
 ✅ **Backend opérationnel** - Prêt pour intégration frontend  
 ✅ **Table documents étendue** - Nouveaux champs ajoutés  
 ✅ **Sécurité implémentée** - Isolation des données clients  
 ✅ **Validation complète** - Types, tailles, permissions  
-✅ **Logs optimisés** - Messages clairs et concis
+✅ **Logs optimisés** - Messages clairs et concis  
+🔔 **Messages de succès disponibles** - **Frontend doit les implémenter**
 
 
