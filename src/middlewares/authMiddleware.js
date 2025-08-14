@@ -33,7 +33,11 @@ const authorizeRole = (roles) => {
       });
     }
 
-    if (!roles.includes(req.user.role)) {
+    // Normaliser les rôles pour la comparaison (insensible à la casse)
+    const userRoleNormalized = req.user.role.toLowerCase();
+    const normalizedRoles = roles.map(role => role.toLowerCase());
+    
+    if (!normalizedRoles.includes(userRoleNormalized)) {
       return res.status(403).json({
         success: false,
         message: 'Accès refusé - Privilèges insuffisants'
@@ -107,7 +111,11 @@ const authorizeRoleHidden = (roles) => {
     }
 
     // Si utilisateur connecté mais mauvais rôle, retourner 404 (page non trouvée)
-    if (!roles.includes(req.user.role)) {
+    // Normaliser les rôles pour la comparaison (insensible à la casse)
+    const userRoleNormalized = req.user.role.toLowerCase();
+    const normalizedRoles = roles.map(role => role.toLowerCase());
+    
+    if (!normalizedRoles.includes(userRoleNormalized)) {
       return res.status(404).json({
         success: false,
         message: 'Page non trouvée'
