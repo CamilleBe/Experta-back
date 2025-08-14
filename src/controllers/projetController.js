@@ -623,6 +623,198 @@ const getMyProjets = async (req, res) => {
   }
 };
 
+// ================================================
+// ENDPOINT SPÉCIFIQUE POUR AMO - ACCEPTER PROJET
+// ================================================
+
+const acceptProjet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const amoId = req.user.id; // AMO qui accepte le projet
+    console.log(`✅ AMO ${amoId} accepte le projet ID: ${id}`);
+    
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID projet invalide'
+      });
+    }
+    
+    // Vérifier que l'utilisateur est bien un AMO
+    if (req.user.role !== 'AMO') {
+      return res.status(403).json({
+        success: false,
+        message: 'Seuls les AMO peuvent accepter des projets'
+      });
+    }
+    
+    const projet = await Projet.findByPk(id);
+    if (!projet || !projet.isActive) {
+      return res.status(404).json({
+        success: false,
+        message: 'Projet non trouvé'
+      });
+    }
+    
+    // Vérifier que le projet est encore disponible
+    if (projet.amoId) {
+      return res.status(409).json({
+        success: false,
+        message: 'Ce projet a déjà été accepté par un autre AMO'
+      });
+    }
+    
+    if (projet.statut !== 'brouillon') {
+      return res.status(409).json({
+        success: false,
+        message: 'Ce projet n\'est plus disponible'
+      });
+    }
+    
+    // Accepter le projet
+    await projet.update({
+      amoId: amoId,
+      statut: 'accepte' // Nouveau statut pour projet accepté par AMO
+    });
+    
+    // Récupérer le projet mis à jour avec les relations
+    const projetAccepte = await Projet.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: 'client',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'telephone']
+        },
+        {
+          model: User,
+          as: 'amo',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'telephone', 'nomEntreprise']
+        },
+        {
+          model: Mission,
+          as: 'missions',
+          where: { isActive: true },
+          required: false
+        }
+      ]
+    });
+    
+    // Log de confirmation
+    console.log(`🎉 Projet accepté avec succès:`);
+    console.log(`   📋 Projet: ${projet.description.substring(0, 50)}...`);
+    console.log(`   📍 Lieu: ${projet.city} (${projet.postalCode})`);
+    console.log(`   👤 Client: ${projetAccepte.client.email}`);
+    console.log(`   🏢 AMO: ${projetAccepte.amo.firstName} ${projetAccepte.amo.lastName} (${projetAccepte.amo.nomEntreprise || projetAccepte.amo.email})`);
+    console.log(`   📅 Accepté le: ${new Date().toLocaleString('fr-FR')}`);
+    console.log('   ────────────────────────────────────────────────────');
+    
+    res.status(200).json({
+      success: true,
+      data: projetAccepte,
+      message: 'Projet accepté avec succès! Il apparaît maintenant dans votre dashboard.'
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur acceptProjet:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'acceptation du projet',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
+    });
+  }
+};
+
+// ================================================
+// ENDPOINT DASHBOARD AMO - MES PROJETS
+// ================================================
+
+const getMyAMOProjets = async (req, res) => {
+  try {
+    const amoId = req.user.id;
+    console.log(`📋 Dashboard AMO - Récupération des projets pour l'AMO ID: ${amoId}`);
+    
+    // Vérifier que l'utilisateur est bien un AMO
+    if (req.user.role !== 'AMO') {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès refusé - Seuls les AMO peuvent accéder à leur dashboard'
+      });
+    }
+    
+    // Récupérer tous les projets de l'AMO
+    const projets = await Projet.findAll({
+      where: { 
+        amoId: amoId,
+        isActive: true
+      },
+      order: [['updatedAt', 'DESC']],
+      include: [
+        {
+          model: User,
+          as: 'client',
+          attributes: ['id', 'firstName', 'lastName', 'email', 'telephone']
+        },
+        {
+          model: Mission,
+          as: 'missions',
+          where: { isActive: true },
+          required: false
+        }
+      ]
+    });
+    
+    // Calculer les statistiques pour le dashboard AMO
+    const stats = {
+      total: projets.length,
+      acceptes: projets.filter(p => p.statut === 'accepte').length,
+      enCours: projets.filter(p => p.statut === 'en_cours').length,
+      termines: projets.filter(p => p.statut === 'termine').length,
+      chiffreAffairesTotal: projets.reduce((sum, p) => sum + (p.budget || 0), 0),
+      chiffreAffairesRealise: projets
+        .filter(p => p.statut === 'termine')
+        .reduce((sum, p) => sum + (p.budget || 0), 0)
+    };
+    
+    // Enrichir chaque projet avec des infos calculées
+    const projetsEnriches = projets.map(projet => {
+      const projetJson = projet.toJSON();
+      return {
+        ...projetJson,
+        budgetFormate: projet.budget ? 
+          new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(projet.budget) : 
+          'Non spécifié',
+        dureeJours: Math.floor((new Date() - new Date(projet.createdAt)) / (1000 * 60 * 60 * 24)),
+        adresseComplete: `${projet.address}, ${projet.city} ${projet.postalCode}`,
+        nombreMissions: projet.missions ? projet.missions.length : 0
+      };
+    });
+    
+    res.status(200).json({
+      success: true,
+      data: {
+        projets: projetsEnriches,
+        statistiques: stats,
+        amoInfo: {
+          id: req.user.id,
+          nom: `${req.user.firstName} ${req.user.lastName}`,
+          entreprise: req.user.nomEntreprise,
+          email: req.user.email,
+          zoneIntervention: req.user.zoneIntervention
+        }
+      },
+      message: `Dashboard AMO - ${projets.length} projet(s) récupéré(s)`
+    });
+    
+  } catch (error) {
+    console.error('❌ Erreur getMyAMOProjets (dashboard AMO):', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération du dashboard AMO',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
+    });
+  }
+};
+
 module.exports = {
   getAllProjets,
   getProjetById,
@@ -632,5 +824,7 @@ module.exports = {
   getProjetsByClient,
   getProjetsByAMO,
   getProjetsByStatus,
-  getMyProjets
+  getMyProjets,
+  acceptProjet,
+  getMyAMOProjets
 }; 

@@ -16,9 +16,11 @@ router.post('/', optionalAuthenticateToken, authorizeClientOrAnonymous, validate
 
 // Routes spécialisées (authentification requise) - DOIVENT ÊTRE AVANT les routes dynamiques
 router.get('/my-projects', authenticateToken, authorizeRole(['client']), projetController.getMyProjets);
+router.get('/my-amo-projects', authenticateToken, authorizeRole(['AMO']), projetController.getMyAMOProjets);
+router.post('/:id/accept', authenticateToken, authorizeRole(['AMO']), projetController.acceptProjet);
 router.get('/client/:clientId', authenticateToken, authorizeRole(['client', 'admin']), projetController.getProjetsByClient);
 router.get('/amo/:amoId', authenticateToken, authorizeRole(['AMO', 'admin']), projetController.getProjetsByAMO);
-router.get('/status/:statut', authenticateToken, authorizeRole(['admin', 'amo']), projetController.getProjetsByStatus);
+router.get('/status/:statut', authenticateToken, authorizeRole(['admin', 'AMO']), projetController.getProjetsByStatus);
 
 // Routes dynamiques (DOIVENT ÊTRE À LA FIN)
 router.get('/:id', authenticateToken, authorizeRole(['client', 'amo', 'admin']), projetController.getProjetById);
