@@ -404,7 +404,10 @@ const updateProjet = async (req, res) => {
 const deleteProjet = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`🗑️ Suppression du projet ID: ${id}`);
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    
+    console.log(`🗑️ ${userRole} ${userId} tente de supprimer le projet ID: ${id}`);
     
     if (!id || isNaN(id)) {
       return res.status(400).json({
@@ -421,8 +424,56 @@ const deleteProjet = async (req, res) => {
       });
     }
     
+    // ================================================
+    // CONTRÔLES DE SÉCURITÉ SELON LE RÔLE
+    // ================================================
+    
+    if (userRole === 'client') {
+      // Les clients ne peuvent supprimer que leurs propres projets
+      if (projet.clientId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Vous ne pouvez supprimer que vos propres projets'
+        });
+      }
+      
+      // Les clients ne peuvent supprimer que les projets en statut "brouillon"
+      if (projet.statut !== 'brouillon') {
+        return res.status(403).json({
+          success: false,
+          message: 'Vous ne pouvez supprimer que les projets en brouillon. Ce projet a déjà été accepté ou est en cours.'
+        });
+      }
+      
+      console.log(`✅ Client autorisé à supprimer son projet en brouillon`);
+      
+    } else if (userRole === 'AMO') {
+      // Les AMO peuvent supprimer leurs projets acceptés ou en cours
+      if (projet.amoId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: 'Vous ne pouvez supprimer que les projets qui vous ont été assignés'
+        });
+      }
+      
+      console.log(`✅ AMO autorisé à supprimer son projet assigné`);
+      
+    } else if (userRole === 'admin') {
+      // Les admins peuvent tout supprimer
+      console.log(`✅ Admin autorisé à supprimer n'importe quel projet`);
+    }
+    
     // Soft delete
     await projet.update({ isActive: false });
+    
+    // Log détaillé de la suppression
+    console.log(`🗑️ Projet supprimé avec succès:`);
+    console.log(`   📋 Projet: ${projet.description.substring(0, 50)}...`);
+    console.log(`   📍 Lieu: ${projet.city} (${projet.postalCode})`);
+    console.log(`   📊 Statut: ${projet.statut}`);
+    console.log(`   👤 Supprimé par: ${userRole} ${userId}`);
+    console.log(`   📅 Supprimé le: ${new Date().toLocaleString('fr-FR')}`);
+    console.log('   ────────────────────────────────────────────────────');
     
     res.status(200).json({
       success: true,
@@ -434,7 +485,7 @@ const deleteProjet = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression du projet',
-      error: error.message
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Erreur interne du serveur'
     });
   }
 };

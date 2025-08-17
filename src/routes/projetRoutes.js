@@ -25,6 +25,6 @@ router.get('/status/:statut', authenticateToken, authorizeRole(['admin', 'AMO'])
 // Routes dynamiques (DOIVENT ÊTRE À LA FIN)
 router.get('/:id', authenticateToken, authorizeRole(['client', 'amo', 'admin']), projetController.getProjetById);
 router.put('/:id', authenticateToken, authorizeRole(['client', 'amo', 'admin']), validateProjectUpdate, projetController.updateProjet);
-router.delete('/:id', authenticateToken, authorizeRole(['admin', 'amo']), projetController.deleteProjet);
+router.delete('/:id', authenticateToken, authorizeRole(['admin', 'AMO', 'client']), projetController.deleteProjet);
 
 module.exports = router; 

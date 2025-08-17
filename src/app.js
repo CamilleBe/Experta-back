@@ -5,6 +5,9 @@ require('dotenv').config();
 // Import de la configuration de base de données
 const { initializeDatabase } = require('./models');
 
+// Import du middleware de sanitisation
+const { sanitizeInputs } = require('./middlewares/sanitizeMiddleware');
+
 const app = express();
 
 // Middlewares CORS - Configuration temporaire permissive pour debug
@@ -38,6 +41,11 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ================================================
+// MIDDLEWARE DE SANITISATION DES ENTRÉES
+// ================================================
+app.use(sanitizeInputs);
 
 // Middleware de logging simple
 app.use((req, res, next) => {
